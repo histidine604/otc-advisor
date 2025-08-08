@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OTC Advisor (MVP)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>OTC Advisor (MVP)</h1>
+    <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice. In an emergency, call 911.</p>
+  </header>
+  <main>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="ailment">Choose an ailment</label>
+          <select id="ailment"></select>
+        </div>
+        <div class="no-print" style="align-self:flex-end; display:flex; gap:8px;">
+          <button class="btn btn-ghost" id="resetBtn">Reset</button>
+          <button class="btn btn-primary" id="printBtn">Print/Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="questions" class="card"></div>
+    <div id="result" class="card"></div>
+  </main>
+
+  <!-- Dosing modal (starts hidden) -->
+  <div id="dosingModal" class="modal no-print" hidden>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="dosingTitle">
+      <div class="modal-header">
+        <div class="title" id="dosingTitle">Pediatric/Adult Dosing Calculator</div>
+        <button id="closeModal" class="btn btn-ghost" aria-label="Close dosing calculator">Close</button>
+      </div>
+      <hr />
+      <div class="row">
+        <div class="card" style="flex:1 1 300px;">
+          <label>Units</label>
+          <div class="chip-group" id="unitChips">
+            <div class="chip active" data-value="kg">kg</div>
+            <div class="chip" data-value="lb">lb</div>
+          </div>
+          <label for="weightInput">Weight</label>
+          <input id="weightInput" type="number" min="0" step="0.1" placeholder="Enter weight" />
+          <div class="muted" id="unitHint">Using kilograms (kg)</div>
+          <hr />
+          <div class="muted">Formulas shown below are based on label-standard ranges:</div>
+          <ul class="muted">
+            <li>Acetaminophen: 10–15 mg/kg every 4–6 hours (max 75 mg/kg/day; adult OTC max 3,000 mg/day unless label says 4,000 mg/day).</li>
+            <li>Ibuprofen (≥6 months): 5–10 mg/kg every 6–8 hours (max 40 mg/kg/day; adult OTC max 1,200 mg/day).</li>
+          </ul>
+        </div>
+        <div class="card" style="flex:1 1 360px;">
+          <div class="title">Acetaminophen</div>
+          <div id="apapDoses" class="dose-grid"></div>
+          <div class="muted">Common liquids: 160 mg/5 mL. Tablets: 325 mg, 500 mg (extra strength).</div>
+        </div>
+        <div class="card" style="flex:1 1 360px;">
+          <div class="title">Ibuprofen</div>
+          <div id="ibuDoses" class="dose-grid"></div>
+          <div class="muted">Common liquids: 100 mg/5 mL. Tablets: 200 mg.</div>
+        </div>
+      </div>
+      <div class="note" style="margin-top:12px;">
+        <strong>Safety notes:</strong> Avoid duplicate acetaminophen products; avoid ibuprofen in infants &lt;6 months, late pregnancy, dehydration, ulcer/renal risk. This calculator is for reference; always follow product labels.
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
