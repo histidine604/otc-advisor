@@ -1,10 +1,32 @@
 
-console.log("App loaded v2.1");
+console.log("App loaded v2.1.1");
 document.addEventListener("DOMContentLoaded", () => {
   const d = new Date();
   const el = document.getElementById("buildDate");
   if (el) el.textContent = d.toLocaleString();
 });
+
+function safePopulateSelect() {
+  const sel = document.getElementById('ailment');
+  if (!sel) return;
+  if (sel.options.length <= 1) {
+    console.warn("Ailment dropdown empty — injecting fallback options (check if app.js failed earlier).");
+    const opts = ["Cough","Heartburn / Indigestion","Constipation","Fever","Allergic Rhinitis","Nasal Congestion"];
+    sel.innerHTML = "";
+    opts.forEach((name, idx) => {
+      const opt = document.createElement('option');
+      opt.value = ["cough","heartburn","constipation","fever","allergic_rhinitis","nasal_congestion"][idx];
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+  // If still empty, show a visible message
+  if (sel.options.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = ""; opt.textContent = "Error: reload with Ctrl+F5";
+    sel.appendChild(opt);
+  }
+}
 
 // Age group chips
 function AgeGroupInput(id, label) {
@@ -53,408 +75,250 @@ const Dosing = (function() {
   return { state, setUnit, setWeight, apapDose, ibuDose, volFor };
 })();
 
-// Data + rules (Cough, Heartburn, Constipation, Fever, Allergic Rhinitis, Nasal Congestion)
+// Data + rules
 const DATA = {
   ailments: {
-    cough: {
-      name: "Cough",
-      questions: [
-        AgeGroupInput("agegrp", "Age group"),
-        { id: "duration", type: "select", label: "How long has the cough lasted?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
-        { id: "productive", type: "select", label: "Is the cough wet/productive?", options: ["Yes","No"], required: true },
-        { id: "redflags", type: "multiselect", label: "Any of these red flags?", options: [
-          "Shortness of breath or wheezing",
-          "Coughing up blood",
-          "High fever",
-          "Unintentional weight loss"
-        ]}
-      ],
-      recommend: (a) => {
-        const refer = []; const notes = []; const recs = []; const nonDrug = [];
-        const agegrp = a.agegrp;
-        const duration = a.duration;
-        const productive = a.productive;
-        const redflags = a.redflags || [];
+    cough: { name: "Cough", questions: [
+      AgeGroupInput("agegrp", "Age group"),
+      { id: "duration", type: "select", label: "How long has the cough lasted?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
+      { id: "productive", type: "select", label: "Is the cough wet/productive?", options: ["Yes","No"], required: true },
+      { id: "redflags", type: "multiselect", label: "Any of these red flags?", options: [
+        "Shortness of breath or wheezing",
+        "Coughing up blood",
+        "High fever",
+        "Unintentional weight loss"
+      ]}
+    ],
+    recommend: (a) => {
+      const refer = []; const notes = []; const recs = []; const nonDrug = [];
+      const agegrp = a.agegrp;
+      const duration = a.duration;
+      const productive = a.productive;
+      const redflags = a.redflags || [];
 
-        if (redflags.length) refer.push("One or more red flags selected.");
-        if (duration === ">3 weeks") refer.push("Cough longer than 3 weeks.");
+      if (redflags.length) refer.push("One or more red flags selected.");
+      if (duration === ">3 weeks") refer.push("Cough longer than 3 weeks.");
 
-        if (agegrp === "0-1") notes.push("Avoid OTC cough/cold medicines in children under 4. Use non-drug measures and seek pediatric advice if persistent.");
+      if (agegrp === "0-1") notes.push("Avoid OTC cough/cold medicines in children under 4. Use non-drug measures and seek pediatric advice if persistent.");
 
-        nonDrug.push("Hydration, warm fluids, humidified air.");
-        nonDrug.push("Throat lozenges (age-appropriate).");
-        if (agegrp !== "0-1") nonDrug.push("Honey 1/2–1 tsp as needed (not for <1 year).");
+      nonDrug.push("Hydration, warm fluids, humidified air.");
+      nonDrug.push("Throat lozenges (age-appropriate).");
+      if (agegrp !== "0-1") nonDrug.push("Honey 1/2–1 tsp as needed (not for <1 year).");
 
-        if (!refer.length && agegrp !== "0-1") {
-          if (productive === "Yes") {
-            recs.push({
-              title: "Expectorant (Guaifenesin)",
-              examples: ["Mucinex (guaifenesin)"],
-              how: "Take with water; hydration improves effect.",
-              warn: "Stop and seek care if fever, worsening, or >7 days."
-            });
+      if (!refer.length && agegrp !== "0-1") {
+        if (productive === "Yes") {
+          recs.push({
+            title: "Expectorant (Guaifenesin)",
+            examples: ["Mucinex (guaifenesin)"],
+            how: "Take with water; hydration improves effect.",
+            warn: "Stop and seek care if fever, worsening, or >7 days."
+          });
+        } else {
+          recs.push({
+            title: "Antitussive (Dextromethorphan)",
+            examples: ["Delsym (dextromethorphan ER)"],
+            how: "Use as directed for dry cough.",
+            warn: "Do not use with MAOIs. May cause drowsiness/dizziness. Reassess if >7 days."
+          });
+        }
+      }
+
+      return { refer, notes, recs, nonDrug, showDosing: false };
+    }},
+
+    heartburn: { name: "Heartburn / Indigestion", questions: [
+      AgeGroupInput("agegrp", "Age group"),
+      { id: "freq", type: "select", label: "How often?", options: ["<2 days/week","≥2 days/week"], required: true },
+      { id: "alarm", type: "multiselect", label: "Any alarm symptoms?", options: [
+        "Trouble/painful swallowing",
+        "Vomiting blood or black stools",
+        "Unintentional weight loss",
+        "Severe chest pain"
+      ]},
+      { id: "preg", type: "select", label: "Pregnant?", options: ["No","Yes"]}
+    ],
+    recommend: (a) => {
+      const refer = []; const notes = []; const recs = []; const nonDrug = [];
+      const agegrp = a.agegrp;
+      const freq = a.freq;
+      const alarms = a.alarm || [];
+      const preg = a.preg || "No";
+
+      if (alarms.length) refer.push("Alarm symptoms present.");
+
+      nonDrug.push("Avoid trigger foods, smaller meals, avoid late meals, elevate head of bed.");
+
+      if (!alarms.length) {
+        if (freq === "<2 days/week") {
+          if (preg === "Yes") {
+            recs.push({ title: "Antacid (calcium carbonate)", examples: ["Tums (calcium carbonate)"], how: "Use as needed.", warn: "If frequent use needed, discuss with provider." });
           } else {
-            recs.push({
-              title: "Antitussive (Dextromethorphan)",
-              examples: ["Delsym (dextromethorphan ER)"],
-              how: "Use as directed for dry cough.",
-              warn: "Do not use with MAOIs. May cause drowsiness/dizziness. Reassess if >7 days."
-            });
-          }
-        }
-
-        return { refer, notes, recs, nonDrug, showDosing: false };
-      }
-    },
-
-    heartburn: {
-      name: "Heartburn / Indigestion",
-      questions: [
-        AgeGroupInput("agegrp", "Age group"),
-        { id: "freq", type: "select", label: "How often?", options: ["<2 days/week","≥2 days/week"], required: true },
-        { id: "alarm", type: "multiselect", label: "Any alarm symptoms?", options: [
-          "Trouble/painful swallowing",
-          "Vomiting blood or black stools",
-          "Unintentional weight loss",
-          "Severe chest pain"
-        ]},
-        { id: "preg", type: "select", label: "Pregnant?", options: ["No","Yes"]}
-      ],
-      recommend: (a) => {
-        const refer = []; const notes = []; const recs = []; const nonDrug = [];
-        const agegrp = a.agegrp;
-        const freq = a.freq;
-        const alarms = a.alarm || [];
-        const preg = a.preg || "No";
-
-        if (alarms.length) refer.push("Alarm symptoms present.");
-
-        nonDrug.push("Avoid trigger foods, smaller meals, avoid late meals, elevate head of bed.");
-
-        if (!alarms.length) {
-          if (freq === "<2 days/week") {
-            if (preg === "Yes") {
-              recs.push({
-                title: "Antacid (calcium carbonate)",
-                examples: ["Tums (calcium carbonate)"],
-                how: "Use as needed.",
-                warn: "If frequent use needed, discuss with provider."
-              });
-            } else {
-              recs.push({
-                title: "Antacid or H2RA (famotidine)",
-                examples: ["Tums (calcium carbonate)", "Pepcid (famotidine)"],
-                how: "Antacid for quick relief; H2RA for longer relief.",
-                warn: "Seek care if symptoms persist >2 weeks."
-              });
-            }
-          } else { // ≥2 days/week
-            if (agegrp === "0-1" || agegrp === "2-12") {
-              notes.push("For children, recurring heartburn needs clinician evaluation before OTC PPI use.");
-            } else {
-              recs.push({
-                title: "PPI trial (14 days) if no alarm symptoms",
-                examples: ["omeprazole 20 mg daily before breakfast"],
-                how: "Take daily for 14 days, not for immediate relief.",
-                warn: "If symptoms persist/return quickly, see provider."
-              });
-            }
-          }
-        }
-
-        return { refer, notes, recs, nonDrug, showDosing: false };
-      }
-    },
-
-    constipation: {
-      name: "Constipation",
-      questions: [
-        AgeGroupInput("agegrp", "Age group"),
-        { id: "duration", type: "select", label: "How long?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
-        { id: "features", type: "multiselect", label: "Any of these?", options: [
-          "Severe abdominal pain",
-          "Vomiting",
-          "Blood in stool",
-          "Unintentional weight loss",
-          "Fever"
-        ]},
-        { id: "preg", type: "select", label: "Pregnant?", options: ["No","Yes"]}
-      ],
-      recommend: (a) => {
-        const refer = []; const notes = []; const recs = []; const nonDrug = [];
-        const agegrp = a.agegrp;
-        const duration = a.duration;
-        const features = a.features || [];
-        const preg = a.preg || "No";
-
-        if (features.includes("Severe abdominal pain")) refer.push("Severe abdominal pain.");
-        if (features.includes("Vomiting")) refer.push("Vomiting present.");
-        if (features.includes("Blood in stool")) refer.push("Blood in stool.");
-        if (features.includes("Unintentional weight loss")) refer.push("Unintentional weight loss.");
-        if (duration === ">3 weeks") refer.push("Constipation >3 weeks.");
-
-        nonDrug.push("Increase fluids and dietary fiber (fruits/vegetables/whole grains).");
-        nonDrug.push("Consider fiber supplement; regular physical activity.");
-        if (agegrp === "0-1") nonDrug.push("For infants: small amounts of water; for >4 months, small amounts of prune/pear juice; discuss with pediatrician.");
-
-        if (!refer.length) {
-          if (agegrp === ">12") {
-            if (preg === "Yes") {
-              recs.push({
-                title: "Bulk-forming fiber (psyllium)",
-                examples: ["Metamucil (psyllium)"],
-                how: "Start low, increase with water to avoid bloating.",
-                warn: "Space from other meds by 2 hours."
-              });
-              recs.push({
-                title: "Stool softener (docusate)",
-                examples: ["Colace (docusate sodium)"],
-                how: "Useful for hard, dry stools.",
-                warn: "If ineffective in a few days, discuss alternatives."
-              });
-            } else {
-              recs.push({
-                title: "Osmotic laxative (PEG 3350)",
-                examples: ["MiraLAX (polyethylene glycol 3350)"],
-                how: "Use as directed with water; may take 1–3 days to work.",
-                warn: "Not for prolonged use without clinician advice."
-              });
-              recs.push({
-                title: "Bulk-forming fiber (psyllium)",
-                examples: ["Metamucil (psyllium)"],
-                how: "Start low and increase with plenty of water.",
-                warn: "May cause gas/bloating initially."
-              });
-              recs.push({
-                title: "Stimulant (senna or bisacodyl) — short term",
-                examples: ["Senokot (senna)", "Dulcolax (bisacodyl)"],
-                how: "Consider if others ineffective for short-term relief.",
-                warn: "Abdominal cramping possible; short courses only."
-              });
-            }
-          } else if (agegrp === "2-12") {
-            notes.push("For children, many laxatives require clinician guidance for dosing/duration.");
-            recs.push({
-              title: "Glycerin suppository (age-appropriate)",
-              examples: ["Glycerin pediatric suppository"],
-              how: "May provide quick relief; follow label by age.",
-              warn: "If recurrent constipation, seek pediatric advice."
-            });
-            recs.push({
-              title: "Stool softener (docusate) — if hard stools",
-              examples: ["Docusate sodium (check pediatric labeling)"],
-              how: "Use only per label by age/weight.",
-              warn: "Consult pediatrician for ongoing use."
-            });
-          } else { // 0-1 year
-            notes.push("Avoid most OTC laxatives in infants without pediatric guidance.");
-            recs.push({
-              title: "Glycerin suppository (infant) — occasional",
-              examples: ["Glycerin infant suppository"],
-              how: "Use only per label and pediatric advice.",
-              warn: "If constipation persists or fever/abdominal distention present, seek care."
-            });
-          }
-        }
-        return { refer, notes, recs, nonDrug, showDosing: false };
-      }
-    },
-
-    fever: {
-      name: "Fever",
-      questions: [
-        AgeGroupInput("agegrp", "Age group"),
-        { id: "temp", type: "select", label: "Highest temperature (°F)", options: ["<100.4","100.4–102.2","102.3–104",">104"], required: true },
-        { id: "duration", type: "select", label: "How long?", options: ["<24 hours","1–3 days",">3 days"], required: true },
-        { id: "sx", type: "multiselect", label: "Any of these?", options: [
-          "Stiff neck",
-          "Rash",
-          "Severe sore throat or ear pain",
-          "Shortness of breath",
-          "Dehydration/poor intake",
-          "Confusion/lethargy",
-          "Recent surgery/chemo/immunosuppression"
-        ]}
-      ],
-      recommend: (a) => {
-        const refer = []; const notes = []; const recs = []; const nonDrug = [];
-        const agegrp = a.agegrp;
-        const temp = a.temp;
-        const duration = a.duration;
-        const sx = a.sx || [];
-
-        if (sx.length) refer.push("Concerning associated symptoms present.");
-        if (temp === ">104") refer.push("Very high fever (>104°F).");
-        if (duration === ">3 days") refer.push("Fever >3 days.");
-        if (agegrp === "0-1" && (temp === "100.4–102.2" || temp === "102.3–104" || temp === ">104")) {
-          notes.push("Infants <3 months with ≥100.4°F require immediate medical evaluation.");
-        }
-
-        nonDrug.push("Ensure hydration; light clothing; tepid sponging (avoid cold baths/alcohol rubs).");
-
-        if (!refer.length) {
-          if (agegrp === "0-1") {
-            recs.push({
-              title: "Acetaminophen (if ≥3 months)",
-              examples: ["Tylenol (acetaminophen) infant"],
-              how: "Use per label by weight; avoid duplicate APAP products.",
-              warn: "If under 3 months with fever ≥100.4°F, seek care immediately."
-            });
-            notes.push("Ibuprofen is generally not recommended for <6 months.");
-          } else if (agegrp === "2-12") {
-            recs.push({
-              title: "Acetaminophen",
-              examples: ["Tylenol (acetaminophen)"],
-              how: "Use per label by weight (mg/kg).",
-              warn: "Do not exceed max daily dose; check combination products."
-            });
-            recs.push({
-              title: "Ibuprofen (≥6 months)",
-              examples: ["Advil/Motrin (ibuprofen)"],
-              how: "Use per label by weight (mg/kg) with food if stomach upset.",
-              warn: "Avoid if dehydration, vomiting, or history of ulcers/kidney issues."
-            });
-          } else { // >12
-            recs.push({
-              title: "Acetaminophen",
-              examples: ["Tylenol (acetaminophen)"],
-              how: "Use as directed; avoid exceeding 3,000–4,000 mg/day depending on label/health status.",
-              warn: "Avoid alcohol; liver disease risk."
-            });
-            recs.push({
-              title: "Ibuprofen",
-              examples: ["Advil/Motrin (ibuprofen)"],
-              how: "Use as directed with food if GI upset.",
-              warn: "Avoid if history of ulcers, kidney disease, or late pregnancy."
-            });
-          }
-        }
-        return { refer, notes, recs, nonDrug, showDosing: true };
-      }
-    },
-
-    allergic_rhinitis: {
-      name: "Allergic Rhinitis",
-      questions: [
-        AgeGroupInput("agegrp", "Age group"),
-        { id: "severity", type: "select", label: "How bad are symptoms?", options: ["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required: true },
-        { id: "symptoms", type: "multiselect", label: "Main symptoms", options: [
-          "Sneezing/itching",
-          "Rhinorrhea (runny nose)",
-          "Nasal congestion",
-          "Ocular symptoms (itchy/watery eyes)"
-        ]}
-      ],
-      recommend: (a) => {
-        const refer = []; const notes = []; const recs = []; const nonDrug = [];
-        const agegrp = a.agegrp;
-        const severity = a.severity;
-        const symptoms = a.symptoms || [];
-
-        nonDrug.push("Avoid triggers when possible; saline nasal irrigation.");
-        if (!agegrp) notes.push("Select an age group for age-appropriate options.");
-
-        if (agegrp === "0-1") {
-          notes.push("For infants, prioritize saline spray and pediatric evaluation for ongoing symptoms.");
-          return { refer, notes, recs, nonDrug, showDosing: false };
-        }
-
-        const wantsEyes = symptoms.includes("Ocular symptoms (itchy/watery eyes)");
-        const hasCongestion = symptoms.includes("Nasal congestion");
-
-        if (severity === "Moderate/Severe (affects sleep/daily life)" || hasCongestion) {
-          recs.push({
-            title: "Intranasal corticosteroid (INCS)",
-            examples: ["Flonase (fluticasone)", "Rhinocort (budesonide)", "Nasacort (triamcinolone)"],
-            how: "Daily, proper technique; onset within hours, peak in several days.",
-            warn: "Minor nosebleeds/irritation possible; aim away from septum."
-          });
-          if (wantsEyes) {
-            recs.push({
-              title: "Add oral non-sedating antihistamine for eyes",
-              examples: ["cetirizine", "loratadine", "fexofenadine"],
-              how: "Once daily as needed.",
-              warn: "May cause mild drowsiness (cetirizine > loratadine/fexofenadine)."
-            });
+            recs.push({ title: "Antacid or H2RA (famotidine)", examples: ["Tums (calcium carbonate)", "Pepcid (famotidine)"], how: "Antacid for quick relief; H2RA for longer relief.", warn: "Seek care if symptoms persist >2 weeks." });
           }
         } else {
-          recs.push({
-            title: "Oral non-sedating antihistamine",
-            examples: ["cetirizine", "loratadine", "fexofenadine"],
-            how: "Once daily for itching/sneezing/runny nose.",
-            warn: "Less effective for congestion alone; consider INCS if congestion predominant."
-          });
-          if (wantsEyes) {
-            recs.push({
-              title: "Ophthalmic antihistamine",
-              examples: ["ketotifen eye drops"],
-              how: "Use per label; avoids systemic sedation.",
-              warn: "Remove contacts before use."
-            });
+          if (agegrp === "0-1" || agegrp === "2-12") {
+            notes.push("For children, recurring heartburn needs clinician evaluation before OTC PPI use.");
+          } else {
+            recs.push({ title: "PPI trial (14 days) if no alarm symptoms", examples: ["omeprazole 20 mg daily before breakfast"], how: "Take daily for 14 days, not for immediate relief.", warn: "If symptoms persist/return quickly, see provider." });
           }
         }
-
-        return { refer, notes, recs, nonDrug, showDosing: false };
       }
-    },
 
-    nasal_congestion: {
-      name: "Nasal Congestion",
-      questions: [
-        AgeGroupInput("agegrp", "Age group"),
-        { id: "duration", type: "select", label: "How long?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
-        { id: "conditions", type: "multiselect", label: "Any of these conditions?", options: [
-          "Uncontrolled hypertension",
-          "Heart disease",
-          "Thyroid disease",
-          "Diabetes",
-          "MAOI use (or within 14 days)"
-        ]}
-      ],
-      recommend: (a) => {
-        const refer = []; const notes = []; const recs = []; const nonDrug = [];
-        const agegrp = a.agegrp;
-        const duration = a.duration;
-        const conditions = a.conditions || [];
+      return { refer, notes, recs, nonDrug, showDosing: false };
+    }},
 
-        nonDrug.push("Saline irrigation/spray; humidified air.");
-        if (duration === ">3 weeks") refer.push("Persistent symptoms >3 weeks.");
+    constipation: { name: "Constipation", questions: [
+      AgeGroupInput("agegrp", "Age group"),
+      { id: "duration", type: "select", label: "How long?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
+      { id: "features", type: "multiselect", label: "Any of these?", options: [
+        "Severe abdominal pain","Vomiting","Blood in stool","Unintentional weight loss","Fever"
+      ]},
+      { id: "preg", type: "select", label: "Pregnant?", options: ["No","Yes"]}
+    ],
+    recommend: (a) => {
+      const refer = []; const notes = []; const recs = []; const nonDrug = [];
+      const agegrp = a.agegrp;
+      const duration = a.duration;
+      const features = a.features || [];
+      const preg = a.preg || "No";
 
-        const risky = (label) => conditions.includes(label);
+      if (features.includes("Severe abdominal pain")) refer.push("Severe abdominal pain.");
+      if (features.includes("Vomiting")) refer.push("Vomiting present.");
+      if (features.includes("Blood in stool")) refer.push("Blood in stool.");
+      if (features.includes("Unintentional weight loss")) refer.push("Unintentional weight loss.");
+      if (duration === ">3 weeks") refer.push("Constipation >3 weeks.");
 
-        if (agegrp === "0-1") {
-          notes.push("For infants: use saline spray and nasal suction; avoid decongestants.");
-          return { refer, notes, recs, nonDrug, showDosing: false };
-        }
+      nonDrug.push("Increase fluids and dietary fiber.");
+      nonDrug.push("Consider fiber supplement; regular physical activity.");
+      if (agegrp === "0-1") nonDrug.push("Infants: small water amounts; for >4 months, small prune/pear juice; discuss with pediatrician.");
 
-        recs.push({
-          title: "Topical decongestant (short-term)",
-          examples: ["Oxymetazoline 0.05% (Afrin)"],
-          how: "Up to 2–3 days only to avoid rebound congestion.",
-          warn: "Do not exceed 3 days. Avoid in children <6 unless label allows and clinician advises."
-        });
-
-        if (!(risky("Uncontrolled hypertension") || risky("Heart disease") || risky("Thyroid disease") || risky("Diabetes") || risky("MAOI use (or within 14 days)"))) {
-          recs.push({
-            title: "Oral decongestant",
-            examples: ["pseudoephedrine (behind-the-counter)", "phenylephrine"],
-            how: "Use during the day; can cause insomnia/jitteriness.",
-            warn: "Avoid late evening. Consider BP monitoring in hypertensive patients."
-          });
+      if (!refer.length) {
+        if (agegrp === ">12") {
+          if (preg === "Yes") {
+            recs.push({ title: "Bulk-forming fiber (psyllium)", examples: ["Metamucil (psyllium)"], how: "Start low, increase with water.", warn: "Space from other meds by 2 hours." });
+            recs.push({ title: "Stool softener (docusate)", examples: ["Colace (docusate sodium)"], how: "For hard, dry stools.", warn: "If ineffective in a few days, discuss alternatives." });
+          } else {
+            recs.push({ title: "Osmotic laxative (PEG 3350)", examples: ["MiraLAX (polyethylene glycol 3350)"], how: "Use as directed; may take 1–3 days.", warn: "Not for prolonged use without clinician advice." });
+            recs.push({ title: "Bulk-forming fiber (psyllium)", examples: ["Metamucil (psyllium)"], how: "Start low and increase with water.", warn: "May cause gas/bloating initially." });
+            recs.push({ title: "Stimulant (senna or bisacodyl) — short term", examples: ["Senokot (senna)", "Dulcolax (bisacodyl)"], how: "Short-term rescue.", warn: "Cramping possible; short courses only." });
+          }
+        } else if (agegrp === "2-12") {
+          notes.push("For children, many laxatives require clinician guidance for dosing/duration.");
+          recs.push({ title: "Glycerin suppository (age-appropriate)", examples: ["Glycerin pediatric suppository"], how: "Quick relief; follow label by age.", warn: "If recurrent, seek pediatric advice." });
+          recs.push({ title: "Stool softener (docusate) — if hard stools", examples: ["Docusate sodium (check pediatric labeling)"], how: "Per label by age/weight.", warn: "Consult pediatrician for ongoing use." });
         } else {
-          notes.push("Oral decongestants may be inappropriate with selected conditions—consider intranasal steroid for ongoing congestion.");
+          notes.push("Avoid most OTC laxatives in infants without pediatric guidance.");
+          recs.push({ title: "Glycerin suppository (infant) — occasional", examples: ["Glycerin infant suppository"], how: "Per label and pediatric advice.", warn: "If persistent or distention/fever, seek care." });
         }
+      }
+      return { refer, notes, recs, nonDrug, showDosing: false };
+    }},
 
-        recs.push({
-          title: "Intranasal corticosteroid (INCS)",
-          examples: ["Flonase (fluticasone)", "Rhinocort (budesonide)", "Nasacort (triamcinolone)"],
-          how: "Daily use, proper technique; not an immediate decongestant but helpful over days.",
-          warn: "Nasal irritation possible; aim away from septum."
-        });
+    fever: { name: "Fever", questions: [
+      AgeGroupInput("agegrp", "Age group"),
+      { id: "temp", type: "select", label: "Highest temperature (°F)", options: ["<100.4","100.4–102.2","102.3–104",">104"], required: true },
+      { id: "duration", type: "select", label: "How long?", options: ["<24 hours","1–3 days",">3 days"], required: true },
+      { id: "sx", type: "multiselect", label: "Any of these?", options: [
+        "Stiff neck","Rash","Severe sore throat or ear pain","Shortness of breath","Dehydration/poor intake","Confusion/lethargy","Recent surgery/chemo/immunosuppression"
+      ]}
+    ],
+    recommend: (a) => {
+      const refer = []; const notes = []; const recs = []; const nonDrug = [];
+      const agegrp = a.agegrp; const temp = a.temp; const duration = a.duration; const sx = a.sx || [];
 
+      if (sx.length) refer.push("Concerning associated symptoms present.");
+      if (temp === ">104") refer.push("Very high fever (>104°F).");
+      if (duration === ">3 days") refer.push("Fever >3 days.");
+      if (agegrp === "0-1" && (temp === "100.4–102.2" || temp === "102.3–104" || temp === ">104")) {
+        notes.push("Infants <3 months with ≥100.4°F require immediate medical evaluation.");
+      }
+
+      nonDrug.push("Ensure hydration; light clothing; tepid sponging (avoid cold baths/alcohol rubs).");
+
+      if (!refer.length) {
+        if (agegrp === "0-1") {
+          recs.push({ title: "Acetaminophen (if ≥3 months)", examples: ["Tylenol (acetaminophen) infant"], how: "Per label by weight; avoid duplicate APAP.", warn: "If under 3 months with ≥100.4°F, seek care immediately." });
+          notes.push("Ibuprofen is generally not recommended for <6 months.");
+        } else if (agegrp === "2-12") {
+          recs.push({ title: "Acetaminophen", examples: ["Tylenol (acetaminophen)"], how: "Per label by weight (mg/kg).", warn: "Do not exceed max daily dose; check combos." });
+          recs.push({ title: "Ibuprofen (≥6 months)", examples: ["Advil/Motrin (ibuprofen)"], how: "Per label by weight (mg/kg); with food if upset.", warn: "Avoid if dehydration, vomiting, ulcers/kidney issues." });
+        } else {
+          recs.push({ title: "Acetaminophen", examples: ["Tylenol (acetaminophen)"], how: "Follow label; avoid exceeding max/day per label/health status.", warn: "Avoid alcohol; liver disease risk." });
+          recs.push({ title: "Ibuprofen", examples: ["Advil/Motrin (ibuprofen)"], how: "Use with food if GI upset.", warn: "Avoid if ulcers, kidney disease, late pregnancy." });
+        }
+      }
+      return { refer, notes, recs, nonDrug, showDosing: true };
+    }},
+
+    allergic_rhinitis: { name: "Allergic Rhinitis", questions: [
+      AgeGroupInput("agegrp", "Age group"),
+      { id: "severity", type: "select", label: "How bad are symptoms?", options: ["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required: true },
+      { id: "symptoms", type: "multiselect", label: "Main symptoms", options: [
+        "Sneezing/itching","Rhinorrhea (runny nose)","Nasal congestion","Ocular symptoms (itchy/watery eyes)"
+      ]}
+    ],
+    recommend: (a) => {
+      const refer = []; const notes = []; const recs = []; const nonDrug = [];
+      const agegrp = a.agegrp; const severity = a.severity; const symptoms = a.symptoms || [];
+
+      nonDrug.push("Avoid triggers when possible; saline nasal irrigation.");
+      if (!agegrp) notes.push("Select an age group for age-appropriate options.");
+
+      if (agegrp === "0-1") {
+        notes.push("For infants, prioritize saline spray and pediatric evaluation for ongoing symptoms.");
         return { refer, notes, recs, nonDrug, showDosing: false };
       }
-    }
+
+      const wantsEyes = symptoms.includes("Ocular symptoms (itchy/watery eyes)");
+      const hasCongestion = symptoms.includes("Nasal congestion");
+
+      if (severity === "Moderate/Severe (affects sleep/daily life)" || hasCongestion) {
+        recs.push({ title: "Intranasal corticosteroid (INCS)", examples: ["Flonase (fluticasone)", "Rhinocort (budesonide)", "Nasacort (triamcinolone)"], how: "Daily; proper technique; onset hours, peak days.", warn: "Minor nosebleeds/irritation possible; aim away from septum." });
+        if (wantsEyes) {
+          recs.push({ title: "Add oral non-sedating antihistamine for eyes", examples: ["cetirizine","loratadine","fexofenadine"], how: "Once daily as needed.", warn: "Mild drowsiness possible (cetirizine > loratadine/fexofenadine)." });
+        }
+      } else {
+        recs.push({ title: "Oral non-sedating antihistamine", examples: ["cetirizine","loratadine","fexofenadine"], how: "Once daily for itching/sneezing/runny nose.", warn: "Less effective for congestion alone; consider INCS if congestion predominant." });
+        if (wantsEyes) {
+          recs.push({ title: "Ophthalmic antihistamine", examples: ["ketotifen eye drops"], how: "Per label; avoids systemic sedation.", warn: "Remove contacts before use." });
+        }
+      }
+
+      return { refer, notes, recs, nonDrug, showDosing: false };
+    }},
+
+    nasal_congestion: { name: "Nasal Congestion", questions: [
+      AgeGroupInput("agegrp", "Age group"),
+      { id: "duration", type: "select", label: "How long?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
+      { id: "conditions", type: "multiselect", label: "Any of these conditions?", options: [
+        "Uncontrolled hypertension","Heart disease","Thyroid disease","Diabetes","MAOI use (or within 14 days)"
+      ]}
+    ],
+    recommend: (a) => {
+      const refer = []; const notes = []; const recs = []; const nonDrug = [];
+      const agegrp = a.agegrp; const duration = a.duration; const conditions = a.conditions || [];
+
+      nonDrug.push("Saline irrigation/spray; humidified air.");
+      if (duration === ">3 weeks") refer.push("Persistent symptoms >3 weeks.");
+      const risky = (label) => conditions.includes(label);
+
+      if (agegrp === "0-1") {
+        notes.push("For infants: use saline spray and nasal suction; avoid decongestants.");
+        return { refer, notes, recs, nonDrug, showDosing: false };
+      }
+
+      recs.push({ title: "Topical decongestant (short-term)", examples: ["Oxymetazoline 0.05% (Afrin)"], how: "Up to 2–3 days only to avoid rebound congestion.", warn: "Do not exceed 3 days. Avoid in children <6 unless label allows and clinician advises." });
+
+      if (!(risky("Uncontrolled hypertension") || risky("Heart disease") || risky("Thyroid disease") || risky("Diabetes") || risky("MAOI use (or within 14 days)"))) {
+        recs.push({ title: "Oral decongestant", examples: ["pseudoephedrine (behind-the-counter)", "phenylephrine"], how: "Daytime use; can cause insomnia/jitteriness.", warn: "Avoid late evening. Consider BP monitoring in hypertensive patients." });
+      } else {
+        notes.push("Oral decongestants may be inappropriate with selected conditions—consider intranasal steroid for ongoing congestion.");
+      }
+
+      recs.push({ title: "Intranasal corticosteroid (INCS)", examples: ["Flonase (fluticasone)", "Rhinocort (budesonide)", "Nasacort (triamcinolone)"], how: "Daily; proper technique; helpful over days.", warn: "Nasal irritation possible; aim away from septum." });
+
+      return { refer, notes, recs, nonDrug, showDosing: false };
+    }}
   }
 };
 
@@ -475,10 +339,13 @@ const $apapDoses = document.getElementById('apapDoses');
 const $ibuDoses = document.getElementById('ibuDoses');
 
 function init() {
+  // Populate ailments
   Object.entries(DATA.ailments).forEach(([key, obj]) => {
     const opt = document.createElement('option');
     opt.value = key; opt.textContent = obj.name; $ailment.appendChild(opt);
   });
+  safePopulateSelect();
+
   $ailment.addEventListener('change', renderQuestions);
   $printBtn.addEventListener('click', () => window.print());
   $resetBtn.addEventListener('click', () => { renderQuestions(true); $result.innerHTML = ''; });
@@ -500,6 +367,13 @@ function init() {
   });
 
   renderQuestions();
+
+  // Final safety: if nothing rendered, log
+  setTimeout(() => {
+    if (!$questions.innerHTML.trim()) {
+      console.error("Form failed to render. Check for console errors and ensure app.js loaded.");
+    }
+  }, 1000);
 }
 
 function renderQuestions(reset = false) {
@@ -644,13 +518,15 @@ function renderResult({ aName, refer, notes, recs, nonDrug, showDosing }) {
 }
 
 // Modal control
-function showModal() { if ($modal) { $modal.hidden = false; recalcDoses(); } }
-function hideModal() { if ($modal) $modal.hidden = true; }
+function showModal() { const m = document.getElementById('dosingModal'); if (m) { m.hidden = false; recalcDoses(); } }
+function hideModal() { const m = document.getElementById('dosingModal'); if (m) m.hidden = true; }
 
 function recalcDoses() {
-  if (!$apapDoses || !$ibuDoses) return;
-  $apapDoses.innerHTML = '';
-  $ibuDoses.innerHTML = '';
+  const ap = document.getElementById('apapDoses');
+  const ib = document.getElementById('ibuDoses');
+  if (!ap || !ib) return;
+  ap.innerHTML = '';
+  ib.innerHTML = '';
   const apap = Dosing.apapDose();
   const ibu = Dosing.ibuDose();
 
@@ -663,7 +539,7 @@ function recalcDoses() {
   } else {
     apapCard.textContent = 'Enter weight to calculate dose.';
   }
-  $apapDoses.appendChild(apapCard);
+  ap.appendChild(apapCard);
 
   const ibuCard = document.createElement('div'); ibuCard.className = 'dose-card';
   if (ibu) {
@@ -674,7 +550,7 @@ function recalcDoses() {
   } else {
     ibuCard.textContent = 'Enter weight to calculate dose.';
   }
-  $ibuDoses.appendChild(ibuCard);
+  ib.appendChild(ibuCard);
 }
 
 // Backdrop and Esc to close modal
@@ -686,10 +562,4 @@ document.addEventListener('keydown', (e) => {
 });
 
 // --- Init ---
-const $ailment = document.getElementById('ailment');
-const $questions = document.getElementById('questions');
-const $result = document.getElementById('result');
-const $printBtn = document.getElementById('printBtn');
-const $resetBtn = document.getElementById('resetBtn');
-
 init();

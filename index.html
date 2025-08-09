@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OTC Advisor (MVP)</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2.1.1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
 </head>
 <body>
   <header>
@@ -16,7 +19,7 @@
       <div class="row">
         <div>
           <label for="ailment">Choose an ailment</label>
-          <select id="ailment"></select>
+          <select id="ailment"><option value="">Loading…</option></select>
         </div>
         <div class="no-print" style="align-self:flex-end; display:flex; gap:8px;">
           <button class="btn btn-ghost" id="resetBtn">Reset</button>
@@ -50,8 +53,8 @@
           <hr />
           <div class="muted">Label-standard ranges:</div>
           <ul class="muted">
-            <li>Acetaminophen: 10–15 mg/kg q4–6h (max 75 mg/kg/day; adult OTC max 3,000 mg/day unless label says 4,000 mg/day).</li>
-            <li>Ibuprofen (≥6 months): 5–10 mg/kg q6–8h (max 40 mg/kg/day; adult OTC max 1,200 mg/day).</li>
+            <li>Acetaminophen: 10–15 mg/kg q4–6h (max 75 mg/kg/day; adult OTC max per label).</li>
+            <li>Ibuprofen (≥6 months): 5–10 mg/kg q6–8h (max 40 mg/kg/day; adult OTC max per label).</li>
           </ul>
         </div>
         <div class="card" style="flex:1 1 360px;">
@@ -72,9 +75,9 @@
   </div>
 
   <footer class="footer no-print">
-    OTC Advisor <strong>v2.1</strong> — <span id="buildDate"></span>
+    OTC Advisor <strong>v2.1.1</strong> — <span id="buildDate"></span>
   </footer>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2.1.1"></script>
 </body>
 </html>
