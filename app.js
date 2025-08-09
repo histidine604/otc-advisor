@@ -1,4 +1,11 @@
 
+console.log("App loaded v2.1");
+document.addEventListener("DOMContentLoaded", () => {
+  const d = new Date();
+  const el = document.getElementById("buildDate");
+  if (el) el.textContent = d.toLocaleString();
+});
+
 // Age group chips
 function AgeGroupInput(id, label) {
   const groups = [
@@ -46,7 +53,7 @@ const Dosing = (function() {
   return { state, setUnit, setWeight, apapDose, ibuDose, volFor };
 })();
 
-// Data + rules (same as previous message's 'with-dosing' build)
+// Data + rules (Cough, Heartburn, Constipation, Fever, Allergic Rhinitis, Nasal Congestion)
 const DATA = {
   ailments: {
     cough: {
@@ -324,6 +331,129 @@ const DATA = {
         }
         return { refer, notes, recs, nonDrug, showDosing: true };
       }
+    },
+
+    allergic_rhinitis: {
+      name: "Allergic Rhinitis",
+      questions: [
+        AgeGroupInput("agegrp", "Age group"),
+        { id: "severity", type: "select", label: "How bad are symptoms?", options: ["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required: true },
+        { id: "symptoms", type: "multiselect", label: "Main symptoms", options: [
+          "Sneezing/itching",
+          "Rhinorrhea (runny nose)",
+          "Nasal congestion",
+          "Ocular symptoms (itchy/watery eyes)"
+        ]}
+      ],
+      recommend: (a) => {
+        const refer = []; const notes = []; const recs = []; const nonDrug = [];
+        const agegrp = a.agegrp;
+        const severity = a.severity;
+        const symptoms = a.symptoms || [];
+
+        nonDrug.push("Avoid triggers when possible; saline nasal irrigation.");
+        if (!agegrp) notes.push("Select an age group for age-appropriate options.");
+
+        if (agegrp === "0-1") {
+          notes.push("For infants, prioritize saline spray and pediatric evaluation for ongoing symptoms.");
+          return { refer, notes, recs, nonDrug, showDosing: false };
+        }
+
+        const wantsEyes = symptoms.includes("Ocular symptoms (itchy/watery eyes)");
+        const hasCongestion = symptoms.includes("Nasal congestion");
+
+        if (severity === "Moderate/Severe (affects sleep/daily life)" || hasCongestion) {
+          recs.push({
+            title: "Intranasal corticosteroid (INCS)",
+            examples: ["Flonase (fluticasone)", "Rhinocort (budesonide)", "Nasacort (triamcinolone)"],
+            how: "Daily, proper technique; onset within hours, peak in several days.",
+            warn: "Minor nosebleeds/irritation possible; aim away from septum."
+          });
+          if (wantsEyes) {
+            recs.push({
+              title: "Add oral non-sedating antihistamine for eyes",
+              examples: ["cetirizine", "loratadine", "fexofenadine"],
+              how: "Once daily as needed.",
+              warn: "May cause mild drowsiness (cetirizine > loratadine/fexofenadine)."
+            });
+          }
+        } else {
+          recs.push({
+            title: "Oral non-sedating antihistamine",
+            examples: ["cetirizine", "loratadine", "fexofenadine"],
+            how: "Once daily for itching/sneezing/runny nose.",
+            warn: "Less effective for congestion alone; consider INCS if congestion predominant."
+          });
+          if (wantsEyes) {
+            recs.push({
+              title: "Ophthalmic antihistamine",
+              examples: ["ketotifen eye drops"],
+              how: "Use per label; avoids systemic sedation.",
+              warn: "Remove contacts before use."
+            });
+          }
+        }
+
+        return { refer, notes, recs, nonDrug, showDosing: false };
+      }
+    },
+
+    nasal_congestion: {
+      name: "Nasal Congestion",
+      questions: [
+        AgeGroupInput("agegrp", "Age group"),
+        { id: "duration", type: "select", label: "How long?", options: ["<1 week","1–3 weeks",">3 weeks"], required: true },
+        { id: "conditions", type: "multiselect", label: "Any of these conditions?", options: [
+          "Uncontrolled hypertension",
+          "Heart disease",
+          "Thyroid disease",
+          "Diabetes",
+          "MAOI use (or within 14 days)"
+        ]}
+      ],
+      recommend: (a) => {
+        const refer = []; const notes = []; const recs = []; const nonDrug = [];
+        const agegrp = a.agegrp;
+        const duration = a.duration;
+        const conditions = a.conditions || [];
+
+        nonDrug.push("Saline irrigation/spray; humidified air.");
+        if (duration === ">3 weeks") refer.push("Persistent symptoms >3 weeks.");
+
+        const risky = (label) => conditions.includes(label);
+
+        if (agegrp === "0-1") {
+          notes.push("For infants: use saline spray and nasal suction; avoid decongestants.");
+          return { refer, notes, recs, nonDrug, showDosing: false };
+        }
+
+        recs.push({
+          title: "Topical decongestant (short-term)",
+          examples: ["Oxymetazoline 0.05% (Afrin)"],
+          how: "Up to 2–3 days only to avoid rebound congestion.",
+          warn: "Do not exceed 3 days. Avoid in children <6 unless label allows and clinician advises."
+        });
+
+        if (!(risky("Uncontrolled hypertension") || risky("Heart disease") || risky("Thyroid disease") || risky("Diabetes") || risky("MAOI use (or within 14 days)"))) {
+          recs.push({
+            title: "Oral decongestant",
+            examples: ["pseudoephedrine (behind-the-counter)", "phenylephrine"],
+            how: "Use during the day; can cause insomnia/jitteriness.",
+            warn: "Avoid late evening. Consider BP monitoring in hypertensive patients."
+          });
+        } else {
+          notes.push("Oral decongestants may be inappropriate with selected conditions—consider intranasal steroid for ongoing congestion.");
+        }
+
+        recs.push({
+          title: "Intranasal corticosteroid (INCS)",
+          examples: ["Flonase (fluticasone)", "Rhinocort (budesonide)", "Nasacort (triamcinolone)"],
+          how: "Daily use, proper technique; not an immediate decongestant but helpful over days.",
+          warn: "Nasal irritation possible; aim away from septum."
+        });
+
+        return { refer, notes, recs, nonDrug, showDosing: false };
+      }
     }
   }
 };
@@ -335,7 +465,7 @@ const $result = document.getElementById('result');
 const $printBtn = document.getElementById('printBtn');
 const $resetBtn = document.getElementById('resetBtn');
 
-// Modal elements (guard against null if older build opened)
+// Modal elements
 const $modal = document.getElementById('dosingModal');
 const $closeModal = document.getElementById('closeModal');
 const $unitChips = document.getElementById('unitChips');
@@ -353,35 +483,21 @@ function init() {
   $printBtn.addEventListener('click', () => window.print());
   $resetBtn.addEventListener('click', () => { renderQuestions(true); $result.innerHTML = ''; });
 
-  // Dosing modal interactions (only if elements exist)
-  if ($modal) {
-    if ($closeModal) $closeModal.addEventListener('click', hideModal);
-    // Backdrop click closes
-    $modal.addEventListener('click', (e) => {
-      if (e.target === $modal) hideModal();
-    });
-    // ESC key closes
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !$modal.hidden) hideModal();
-    });
-  }
-  if ($unitChips) {
-    $unitChips.querySelectorAll('.chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        $unitChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        Dosing.setUnit(chip.dataset.value);
-        if ($unitHint) $unitHint.textContent = "Using " + (chip.dataset.value === "kg" ? "kilograms (kg)" : "pounds (lb)");
-        recalcDoses();
-      });
-    });
-  }
-  if ($weightInput) {
-    $weightInput.addEventListener('input', () => {
-      Dosing.setWeight($weightInput.value);
+  // Dosing modal interactions
+  if ($closeModal) $closeModal.addEventListener('click', hideModal);
+  if ($unitChips) $unitChips.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $unitChips.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      Dosing.setUnit(chip.dataset.value);
+      if ($unitHint) $unitHint.textContent = "Using " + (chip.dataset.value === "kg" ? "kilograms (kg)" : "pounds (lb)");
       recalcDoses();
     });
-  }
+  });
+  if ($weightInput) $weightInput.addEventListener('input', () => {
+    Dosing.setWeight($weightInput.value);
+    recalcDoses();
+  });
 
   renderQuestions();
 }
@@ -515,7 +631,7 @@ function renderResult({ aName, refer, notes, recs, nonDrug, showDosing }) {
     n.innerHTML = `<strong>Important:</strong> ${notes.join(' ')} `; box.appendChild(n);
   }
 
-  if (showDosing && $modal) {
+  if (showDosing) {
     const wrap = document.createElement('div'); wrap.style.marginTop = '10px';
     const btn = document.createElement('button'); btn.className = 'btn btn-ghost'; btn.type = 'button'; btn.textContent = 'Open Dosing Calculator';
     btn.addEventListener('click', showModal);
@@ -528,7 +644,7 @@ function renderResult({ aName, refer, notes, recs, nonDrug, showDosing }) {
 }
 
 // Modal control
-function showModal() { if ($modal) $modal.hidden = false; recalcDoses(); }
+function showModal() { if ($modal) { $modal.hidden = false; recalcDoses(); } }
 function hideModal() { if ($modal) $modal.hidden = true; }
 
 function recalcDoses() {
@@ -560,5 +676,20 @@ function recalcDoses() {
   }
   $ibuDoses.appendChild(ibuCard);
 }
+
+// Backdrop and Esc to close modal
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'dosingModal') hideModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideModal();
+});
+
+// --- Init ---
+const $ailment = document.getElementById('ailment');
+const $questions = document.getElementById('questions');
+const $result = document.getElementById('result');
+const $printBtn = document.getElementById('printBtn');
+const $resetBtn = document.getElementById('resetBtn');
 
 init();
