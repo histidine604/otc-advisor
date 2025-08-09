@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OTC Advisor (MVP)</title>
-  <link rel="stylesheet" href="styles.css?v=v2.3.1R2" />
+  <link rel="stylesheet" href="styles.css?v=v2.4" />
 </head>
 <body>
   <header>
@@ -12,7 +12,6 @@
     <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice. In an emergency, call 911.</p>
   </header>
 
-  <!-- Error banner -->
   <div id="errorBanner" class="error-banner" hidden></div>
 
   <main>
@@ -20,7 +19,6 @@
       <div class="row">
         <div>
           <label for="ailment">Choose an ailment</label>
-          <!-- PRE-FILLED so the dropdown never appears blank even if JS fails -->
           <select id="ailment">
             <option value="fever">Fever</option>
             <option value="cough">Cough</option>
@@ -31,6 +29,9 @@
             <option value="sore_throat">Sore Throat</option>
             <option value="diarrhea">Diarrhea</option>
             <option value="cold">Common Cold</option>
+            <option value="pain">Pain</option>
+            <option value="sleep">Sleep Difficulty</option>
+            <option value="multi_symptom">Multi‑Symptom</option>
           </select>
         </div>
         <div class="no-print" style="align-self:flex-end; display:flex; gap:8px;">
@@ -87,9 +88,9 @@
   </div>
 
   <footer class="footer no-print">
-    OTC Advisor <strong>v2.3.1R2</strong> — <span id="buildDate">2025-08-09 20:40</span>
+    OTC Advisor <strong>v2.4</strong> — <span id="buildDate">2025-08-09 20:50</span>
   </footer>
 
-  <script src="app.js?v=v2.3.1R2"></script>
+  <script src="app.js?v=v2.4"></script>
 </body>
 </html>
