@@ -3,13 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OTC Advisor (MVP)</title>
-  <link rel="stylesheet" href="styles.css?v=v2.5" />
+  <title>OTC Advisor</title>
+  <link rel="stylesheet" href="styles.css?v=v2.6" />
 </head>
 <body>
   <header>
-    <h1>OTC Advisor (MVP)</h1>
-    <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice. In an emergency, call 911.</p>
+    <div class="topbar">
+      <div class="titles">
+        <h1>OTC Advisor</h1>
+        <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice.</p>
+      </div>
+      <div class="top-controls no-print">
+        <label class="brand-toggle">
+          <input type="checkbox" id="brandToggle" checked />
+          Show brand examples
+        </label>
+        <button class="btn btn-ghost" id="printBtn">Print/Save</button>
+      </div>
+    </div>
   </header>
 
   <div id="errorBanner" class="error-banner" hidden></div>
@@ -34,10 +45,8 @@
             <option value="multi">Multi‑Symptom</option>
           </select>
         </div>
-        <div class="no-print" style="align-self:flex-end; display:flex; gap:12px; flex-wrap:wrap;">
-          <label class="toggle"><input type="checkbox" id="brandToggle" checked /> Show brand examples</label>
-          <button class="btn btn-ghost" id="resetBtn">Reset</button>
-          <button class="btn btn-primary" id="printBtn">Print/Save</button>
+        <div>
+          <button class="btn" id="resetBtn">Reset</button>
         </div>
       </div>
     </div>
@@ -67,7 +76,7 @@
           <hr />
           <div class="muted">Label-standard ranges:</div>
           <ul class="muted">
-            <li>Acetaminophen: 10–15 mg/kg q4–6h (max 75 mg/kg/day; adult OTC max 3,000 mg/day unless label says 4,000 mg/day).</li>
+            <li>Acetaminophen: 10–15 mg/kg q4–6h (max 75 mg/kg/day; adult OTC max 3,000–4,000 mg/day depending on label/health).</li>
             <li>Ibuprofen (≥6 months): 5–10 mg/kg q6–8h (max 40 mg/kg/day; adult OTC max 1,200 mg/day).</li>
           </ul>
         </div>
@@ -83,15 +92,15 @@
         </div>
       </div>
       <div class="note" style="margin-top:12px;">
-        <strong>Safety notes:</strong> Avoid duplicate acetaminophen products; avoid ibuprofen in infants &lt;6 months, late pregnancy, dehydration, ulcer/renal risk. This calculator is for reference; always follow product labels.
+        <strong>Safety notes:</strong> Avoid duplicate acetaminophen products; avoid ibuprofen in infants &lt;6 months, late pregnancy, dehydration, ulcer/renal risk.
       </div>
     </div>
   </div>
 
   <footer class="footer no-print">
-    OTC Advisor <strong>v2.5</strong> — <span id="buildDate">2025-08-09 21:04</span>
+    OTC Advisor <strong>v2.6</strong> — <span id="buildDate">2025-08-09 21:24</span>
   </footer>
 
-  <script src="app.js?v=v2.5"></script>
+  <script src="app.js?v=v2.6"></script>
 </body>
 </html>
