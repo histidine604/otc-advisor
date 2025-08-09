@@ -7,8 +7,7 @@ header p { margin: 0; opacity: 0.95; font-size: 14px; }
 main { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
 .card { background: white; border-radius: 14px; box-shadow: 0 8px 20px rgba(2,8,23,0.06); padding: 18px; margin-bottom: 16px; }
 label { display:block; font-weight: 600; margin: 14px 0 8px; }
-input[type="number"], select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 15px; background:white; }
-select:invalid { color:#94a3b8; }
+input[type="number"], select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 15px; }
 .multi { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
 .multi label { font-weight: 500; display:flex; align-items:center; gap:8px; margin:0; }
 .row { display:flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
@@ -25,13 +24,13 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0; }
 .note { background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:10px 12px; }
 .print-only { display:none; }
 .chip-group { display:flex; gap:8px; flex-wrap:wrap; }
-.chip { border:1px solid #cbd5e1; padding:8px 12px; border-radius:999px; cursor:pointer; user-select:none; background:white; }
+.chip { border:1px solid #cbd5e1; padding:8px 12px; border-radius:999px; cursor:pointer; user-select:none; }
 .chip.active { background:#0ea5e9; color:white; border-color:#0ea5e9; }
 .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: grid; place-items: center; padding: 16px; }
 .modal-content { background:white; border-radius: 16px; padding: 16px; max-width: 1100px; width: 100%; max-height: 90vh; overflow: auto; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
 .modal-header { display:flex; justify-content: space-between; align-items: center; gap: 12px; }
 .dose-grid { display:grid; grid-template-columns: 1fr; gap:8px; }
-.dose-card { border:1px solid #e2e8f0; border-radius:12px; padding:10px; background:white; }
+.dose-card { border:1px solid #e2e8f0; border-radius:12px; padding:10px; }
 .dose-card .muted { font-size:12px; }
 [hidden]{ display:none !important; }
 .footer { max-width:1100px; margin: 8px auto 24px; padding: 0 16px; color:#475569; font-size:13px; }

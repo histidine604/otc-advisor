@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>OTC Advisor (MVP)</title>
-  <link rel="stylesheet" href="styles.css?v=2.2" />
+  <link rel="stylesheet" href="styles.css?v=2.2.1" />
 </head>
 <body>
   <header>
@@ -16,7 +16,7 @@
       <div class="row">
         <div>
           <label for="ailment">Choose an ailment</label>
-          <select id="ailment"><option>Loading…</option></select>
+          <select id="ailment"></select>
         </div>
         <div class="no-print" style="align-self:flex-end; display:flex; gap:8px;">
           <button class="btn btn-ghost" id="resetBtn">Reset</button>
@@ -29,7 +29,6 @@
     <div id="result" class="card"></div>
   </main>
 
-  <!-- Dosing modal -->
   <div id="dosingModal" class="modal no-print" hidden>
     <div class="modal-content">
       <div class="modal-header">
@@ -72,9 +71,9 @@
   </div>
 
   <footer class="footer no-print">
-    OTC Advisor <strong>v2.2</strong> — <span id="buildDate"></span>
+    OTC Advisor <strong>v2.2.1</strong> — <span id="buildDate"></span>
   </footer>
 
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.2.1"></script>
 </body>
 </html>
