@@ -461,9 +461,17 @@ function QuestionBlock({q, value, onChange}) {
     </div>
   );
 }
+function isAnswered(q, answers){
+  const v = answers[q.id];
+  if (q.type === 'multiselect') return Array.isArray(v) && v.length > 0;
+  return v != null && String(v).trim() !== "";
+}
 
 function QuestionsForm({aName, questions, answers, onChange, onSubmit, showDosing, onOpenDosing}) {
   const list = Array.isArray(questions) ? questions : [];
+  const required = list.filter(q => q.required);
+  const allGood = required.every(q => isAnswered(q, answers));
+
   return (
     <div className="card">
       <div className="title">{aName} — Intake</div>
@@ -475,8 +483,17 @@ function QuestionsForm({aName, questions, answers, onChange, onSubmit, showDosin
           <QuestionBlock key={q.id} q={q} value={answers[q.id]} onChange={onChange} />
         ))
       )}
+
+      {!allGood && required.length > 0 && (
+        <div className="muted" style={{marginTop:8}}>
+          Please answer all required questions (marked with * ) to continue.
+        </div>
+      )}
+
       <div className="row no-print" style={{marginTop:12}}>
-        <button className="btn btn-primary" onClick={onSubmit}>Get Recommendation</button>
+        <button className="btn btn-primary" onClick={onSubmit} disabled={!allGood}>
+          Get Recommendation
+        </button>
         {showDosing && (
           <button className="btn btn-ghost" type="button" onClick={onOpenDosing}>Open Dosing Calculator</button>
         )}
@@ -484,6 +501,7 @@ function QuestionsForm({aName, questions, answers, onChange, onSubmit, showDosin
     </div>
   );
 }
+
 
 function DoseCard({title, dose, per5}) {
   const low = dose ? dose.mgPerDoseLow : null;
