@@ -79,53 +79,217 @@ function card(title, examples, how, warn, brandKey){
 }
 
 const CORE = {
-  allergic_rhinitis: {
-    name: "Allergic Rhinitis",
+  /* ---------------- Existing ---------------- */
+  allergic_rhinitis: { /* …keep your current version… */ },
+  fever: { /* …keep your current version… */ },
+
+  /* ---------------- Added ailments ---------------- */
+
+  nasal_congestion: {
+    name: "Nasal Congestion",
     questions: [
       AgeGroupInput("agegrp","Age group"),
-      { id:"severity", type:"select", label:"How bad are symptoms?", options:["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required:true },
-      { id:"symptoms", type:"multiselect", label:"Main symptoms", options:["Sneezing/itching","Rhinorrhea (runny nose)","Nasal congestion","Ocular symptoms (itchy/watery eyes)"]}
+      { id:"duration", type:"select", label:"How long?", options:["<3 days","3–7 days",">7 days"], required:true },
+      { id:"hx", type:"multiselect", label:"History", options:["Pregnant","Uncontrolled hypertension","Glaucoma/BPH/urinary retention"] }
     ],
     recommend: (a) => {
-      const refer=[], notes=[], recs=[], nonDrug=[];
-      const ag=a.agegrp, sev=a.severity, sym=a.symptoms||[];
-      nonDrug.push("Avoid triggers; saline irrigation.");
-      if (ag==="0-1") { notes.push("For infants: saline + pediatric evaluation."); return {refer,notes,recs,nonDrug,showDosing:false}; }
-      const hasCong = sym.includes("Nasal congestion");
-      const eyes = sym.includes("Ocular symptoms (itchy/watery eyes)");
-      if (sev==="Moderate/Severe (affects sleep/daily life)" || hasCong){
-        recs.push(card("Intranasal corticosteroid (INCS)",["Flonase","Rhinocort","Nasacort"],"Daily; proper technique.","Nosebleed/irritation possible.","INCS"));
-        if (eyes) recs.push(card("Oral non-sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Mild drowsiness (cetirizine).","Cetirizine"));
-      } else {
-        recs.push(card("Oral non-sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Less helpful for congestion alone.","Cetirizine"));
-      }
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      const hx=a.hx||[];
+      nonDrug.push("Saline spray/irrigation, humidifier, hydrate; elevate head during sleep.");
+      recs.push(card("Intranasal corticosteroid (INCS)",["fluticasone","triamcinolone","budesonide"],"1–2 sprays/nostril daily; allow several days for full effect.","Irritation/epistaxis possible.","INCS"));
+      recs.push(card("Short‑term topical decongestant",["oxymetazoline"],"Use up to 3 days for severe congestion.",">3 days can cause rebound congestion (rhinitis medicamentosa).","Oxymetazoline"));
+      if (!hx.includes("Uncontrolled hypertension"))
+        recs.push(card("Oral decongestant",["pseudoephedrine","phenylephrine"],"As directed on label.","Avoid with uncontrolled HTN, certain eye/urinary conditions, or stimulant sensitivity.","Pseudoephedrine"));
+      if (a.duration === ">7 days") notes.push("If symptoms persist >7–10 days or worsen, consider evaluation.");
       return { refer, notes, recs, nonDrug, showDosing:false };
     }
   },
-  fever: {
-    name:"Fever",
+
+  cough: {
+    name:"Cough",
     questions:[
       AgeGroupInput("agegrp","Age group"),
-      { id:"temp", type:"select", label:"Highest temperature (°F)", options:["<100.4","100.4–102.2","102.3–104",">104"], required:true },
-      { id:"duration", type:"select", label:"How long?", options:["<24 hours","1–3 days",">3 days"], required:true }
+      { id:"type", type:"select", label:"Cough type", options:["Dry","Wet/productive","Unknown"], required:true },
+      { id:"duration", type:"select", label:"Duration", options:["<1 week","1–3 weeks",">3 weeks"], required:true },
+      { id:"red", type:"multiselect", label:"Any of these?", options:["Shortness of breath","Chest pain","Bloody sputum","High fever","Asthma/COPD"] }
     ],
     recommend:(a)=>{
-      const refer=[], notes=[], recs=[], nonDrug=[]; const ag=a.agegrp;
-      if (ag==="0-1") notes.push("If <3 months with ≥100.4°F → immediate medical evaluation.");
-      nonDrug.push("Hydration; light clothing; avoid cold baths/alcohol rubs.");
-      if (ag==="0-1"){
-        recs.push(card("Acetaminophen",["acetaminophen"],"Per label by weight.","Avoid duplicate APAP.","Acetaminophen"));
-      } else if (ag==="2-12"){
-        recs.push(card("Acetaminophen",["acetaminophen"],"Per label by weight.","Avoid max daily dose.","Acetaminophen"));
-        recs.push(card("Ibuprofen (≥6 months)",["ibuprofen"],"Per label by weight.","Avoid if dehydration/ulcer/renal risk.","Ibuprofen"));
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      const red=a.red||[];
+      if (red.length) refer.push("Red‑flag symptoms present (SOB, chest pain, hemoptysis, high fever, severe underlying disease). Seek medical care.");
+      nonDrug.push("Honey for ≥1 year olds; humidifier; hydrate; avoid smoke/irritants.");
+      if (a.type==="Dry") {
+        recs.push(card("Dextromethorphan",["dextromethorphan"],"Per label up to q6–8h or ER q12h.","Avoid with MAOIs/serotonergic interactions.","Dextromethorphan"));
+      }
+      if (a.type==="Wet/productive" || a.type==="Unknown") {
+        recs.push(card("Guaifenesin",["guaifenesin"],"With plenty of water.","GI upset possible.","Guaifenesin"));
+      }
+      notes.push("Avoid OTC cough/cold combos in young children; follow age labeling.");
+      if (a.duration === ">3 weeks") notes.push("Cough >3 weeks → consider evaluation (post‑viral cough, asthma, GERD, etc.).");
+      return { refer, notes, recs, nonDrug, showDosing:false };
+    }
+  },
+
+  heartburn: {
+    name:"Heartburn / Indigestion",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"freq", type:"select", label:"How often?", options:["Occasional (<2 days/week)","Frequent (≥2 days/week)"], required:true },
+      { id:"alarm", type:"multiselect", label:"Any alarm features?", options:["Trouble swallowing","Unintentional weight loss","Vomiting blood/black stools","Severe chest pain"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      if ((a.alarm||[]).length) refer.push("Alarm symptoms present. Seek medical evaluation.");
+      nonDrug.push("Smaller meals; avoid late meals; limit triggers (fat, caffeine, alcohol); elevate head of bed; weight management if applicable.");
+      if (a.freq==="Occasional (<2 days/week)") {
+        recs.push(card("Antacid (rapid relief)",["calcium carbonate, magnesium/aluminum salts"],"As needed per label.","Short‑acting; watch for constipation/diarrhea depending on salt."));
+        recs.push(card("H2 blocker",["famotidine"],"Before meals or at symptoms onset.","Tolerance possible with daily use."));
       } else {
-        recs.push(card("Acetaminophen",["acetaminophen"],"As directed.","Max per label/health status.","Acetaminophen"));
-        recs.push(card("Ibuprofen",["ibuprofen"],"As directed with food if GI upset.","Avoid if ulcer/kidney disease/late pregnancy.","Ibuprofen"));
+        recs.push(card("PPI short course",["omeprazole"],"Daily for 14 days then reassess.","Takes 1–4 days for full effect. Don’t combine with other acid reducers unless directed."));
+      }
+      notes.push("Persistent symptoms despite OTC therapy → evaluation for GERD or other causes.");
+      return { refer, notes, recs, nonDrug, showDosing:false };
+    }
+  },
+
+  constipation: {
+    name:"Constipation",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"duration", type:"select", label:"How long?", options:["<3 days","3–7 days",">7 days"], required:true },
+      { id:"features", type:"multiselect", label:"Features", options:["Hard stools","Straining","Painful stools","Blood in stool","Recent opioid use"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      if ((a.features||[]).includes("Blood in stool")) refer.push("Blood in stool → medical evaluation.");
+      nonDrug.push("Gradually increase fiber, fluids, and physical activity.");
+      recs.push(card("Osmotic laxative",["PEG 3350"],"Once daily; titrate to soft stools.","Onset 1–3 days.","PEG 3350"));
+      recs.push(card("Bulk fiber",["psyllium","methylcellulose"],"Daily with water.","Gas/bloating possible initially.","Psyllium (fiber)"));
+      recs.push(card("Stool softener",["docusate"],"Adjunct if hard stools predominate.","Variable benefit.","Docusate"));
+      if ((a.features||[]).includes("Recent opioid use")) notes.push("Consider stimulant laxative for opioid‑induced constipation (senna/bisacodyl).");
+      recs.push(card("Stimulant (rescue)",["senna","bisacodyl"],"PRN, preferably at bedtime.","Cramping possible; short‑term use.","Senna"));
+      if (a.duration === ">7 days") notes.push("Constipation >1 week despite OTC measures → consider evaluation.");
+      return { refer, notes, recs, nonDrug, showDosing:false };
+    }
+  },
+
+  sore_throat: {
+    name:"Sore Throat",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"assoc", type:"multiselect", label:"Associated symptoms", options:["Fever","Cough","Runny nose","Rash","Swollen lymph nodes","Trouble breathing/swallowing"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      if ((a.assoc||[]).includes("Trouble breathing/swallowing")) refer.push("Difficulty breathing or swallowing → urgent evaluation.");
+      nonDrug.push("Warm fluids; saline gargles; throat lozenges/sprays (age‑appropriate); humidified air.");
+      recs.push(card("Pain/fever relief",["acetaminophen","ibuprofen (≥6 months)"],"As directed on label.","Avoid duplicate acetaminophen; ibuprofen cautions (GI/renal/pregnancy).","Acetaminophen"));
+      notes.push("Cough/runny nose favor viral; absence of cough with fever + tender lymph nodes may suggest strep—seek testing if concerned.");
+      return { refer, notes, recs, nonDrug, showDosing:true };
+    }
+  },
+
+  diarrhea: {
+    name:"Diarrhea",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"features", type:"multiselect", label:"Any of these?", options:["Blood or black stools","High fever","Severe dehydration","Recent antibiotic use","Travel exposure"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      const f=a.features||[];
+      if (f.includes("Blood or black stools") || f.includes("Severe dehydration")) refer.push("Red flags present → medical evaluation.");
+      nonDrug.push("Oral rehydration solution first; small frequent sips.");
+      recs.push(card("Loperamide (adults)",["loperamide"],"Start per label, then after each loose stool up to max.","Avoid if blood/high fever or suspected dysentery.","Loperamide"));
+      recs.push(card("Bismuth subsalicylate (adults)",["bismuth subsalicylate"],"Per label.","Avoid with aspirin allergy, certain meds, pregnancy; may darken stool/tongue.","Bismuth subsalicylate"));
+      if (f.includes("Recent antibiotic use")) notes.push("Consider possibility of C. difficile if severe/persistent—seek care.");
+      if (f.includes("Travel exposure")) notes.push("Traveler’s diarrhea: fluids, consider bismuth; seek care if severe.");
+      return { refer, notes, recs, nonDrug, showDosing:false };
+    }
+  },
+
+  cold: {
+    name:"Common Cold",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"symptoms", type:"multiselect", label:"Symptoms", options:["Nasal congestion","Runny nose","Cough","Sore throat","Fever","Body aches"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      nonDrug.push("Rest, fluids, humidifier, saline irrigation, honey (≥1 year).");
+      const s=a.symptoms||[];
+      if (s.includes("Nasal congestion")) recs.push(card("INCS or short‑term oxymetazoline",["fluticasone","oxymetazoline"],"INCS daily; oxymetazoline ≤3 days.","Rebound risk with prolonged topical decongestants.","Oxymetazoline"));
+      if (s.includes("Cough")) recs.push(card("Dextromethorphan / Guaifenesin",["dextromethorphan","guaifenesin"],"As directed; hydrate well.","DM interactions; guaifenesin needs fluids.","Dextromethorphan"));
+      if (s.includes("Body aches") || s.includes("Fever")) recs.push(card("Analgesic/antipyretic",["acetaminophen","ibuprofen (≥6 months)"],"As directed.","Watch max doses and duplicates.","Acetaminophen"));
+      notes.push("Avoid multi‑symptom combos when possible; pick single‑ingredient products for targeted relief.");
+      return { refer, notes, recs, nonDrug, showDosing:true };
+    }
+  },
+
+  sleep: {
+    name:"Sleep Difficulty",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"pattern", type:"select", label:"Pattern", options:["Trouble falling asleep","Frequent awakenings","Jet lag/shift change"], required:true },
+      { id:"contra", type:"multiselect", label:"Avoid sedating antihistamines if…", options:["Glaucoma","BPH/urinary retention","Elderly/fall risk","Pregnant/breastfeeding"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      nonDrug.push("Sleep hygiene: consistent schedule, cool/dark room, limit screens/caffeine, wind‑down routine.");
+      if (!(a.contra||[]).some(x=>["Glaucoma","BPH/urinary retention","Elderly/fall risk","Pregnant/breastfeeding"].includes(x))) {
+        recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine","doxylamine"],"Occasional use only.","Next‑day drowsiness/anticholinergic effects; avoid chronic use.","Diphenhydramine"));
+      } else {
+        notes.push("Sedating antihistamines not advised given risk factors selected.");
+      }
+      notes.push("Persistent insomnia ≥3 weeks → evaluate for underlying causes (pain, OSA, anxiety, meds).");
+      return { refer, notes, recs, nonDrug, showDosing:false };
+    }
+  },
+
+  pain: {
+    name:"Pain",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"site", type:"select", label:"Pain type", options:["Headache","Muscle/joint pain","Dental pain","Dysmenorrhea","Other"], required:true },
+      { id:"gi", type:"multiselect", label:"Risk factors", options:["Ulcer history","Kidney disease","Anticoagulant use","Late pregnancy"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      nonDrug.push("RICE for acute strains/sprains; heat for chronic muscle tightness.");
+      recs.push(card("Acetaminophen",["acetaminophen"],"As directed; good baseline option.","Beware duplicate APAP across products.","Acetaminophen"));
+      if (!(a.gi||[]).some(x=>["Ulcer history","Kidney disease","Late pregnancy"].includes(x))) {
+        recs.push(card("NSAID (ibuprofen/naproxen)",["ibuprofen","naproxen"],"With food if GI upset; follow max doses.","Avoid with ulcer history, renal disease, late pregnancy.","Ibuprofen"));
+      } else {
+        notes.push("NSAIDs may not be appropriate given selected risk factors.");
+      }
+      if (a.site==="Muscle/joint pain") {
+        recs.push(card("Topical diclofenac (adults)",["diclofenac gel"],"Apply to affected area as labeled.","Avoid on broken skin; wash hands.","Diclofenac gel"));
       }
       return { refer, notes, recs, nonDrug, showDosing:true };
     }
-  }
+  },
+
+  multi: {
+    name:"Multi‑Symptom",
+    questions:[
+      AgeGroupInput("agegrp","Age group"),
+      { id:"goals", type:"multiselect", label:"What do you want to treat?", options:["Fever/pain","Nasal congestion","Runny nose/sneezing","Cough","Sleep at night"] }
+    ],
+    recommend:(a)=>{
+      const recs=[], notes=[], nonDrug=[], refer=[];
+      nonDrug.push("Fluids, rest, humidifier, saline.");
+      const g=a.goals||[];
+      if (g.includes("Fever/pain")) recs.push(card("Acetaminophen or ibuprofen",["acetaminophen","ibuprofen"],"As directed on label.","Avoid duplicate APAP; ibuprofen cautions.","Acetaminophen"));
+      if (g.includes("Nasal congestion")) recs.push(card("INCS / short‑term oxymetazoline / pseudoephedrine",["fluticasone","oxymetazoline","pseudoephedrine"],"Target congestion specifically.","Topical ≤3 days; oral decongestants not for certain conditions.","Pseudoephedrine"));
+      if (g.includes("Runny nose/sneezing")) recs.push(card("Non‑sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Less helpful for pure congestion.","Cetirizine"));
+      if (g.includes("Cough")) recs.push(card("Dextromethorphan ± Guaifenesin",["dextromethorphan","guaifenesin"],"Per label.","Check interactions; hydrate.","Dextromethorphan"));
+      if (g.includes("Sleep at night")) recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine","doxylamine"],"Occasional nights only.","Anticholinergic effects; avoid in elderly, glaucoma, BPH, pregnancy.","Diphenhydramine"));
+      notes.push("Prefer single‑ingredient products to avoid duplicate/contraindicated ingredients.");
+      return { refer, notes, recs, nonDrug, showDosing:true };
+    }
+  },
 };
+
 
 /* ----------------------- Pure logic ----------------------- */
 /**
