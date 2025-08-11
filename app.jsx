@@ -7,6 +7,27 @@ const BrandPref = {
   get(){ try { return JSON.parse(localStorage.getItem(this.key) ?? "true"); } catch { return true; } },
   set(v){ try { localStorage.setItem(this.key, JSON.stringify(!!v)); } catch {} }
 };
+/* Persist answers per ailment */
+const AnswerStore = {
+  key: "otc_answers_v1",
+  getAll(){
+    try { return JSON.parse(localStorage.getItem(this.key) || "{}"); } catch { return {}; }
+  },
+  get(ailment){
+    const all = this.getAll();
+    return all[ailment] || {};
+  },
+  set(ailment, answers){
+    const all = this.getAll();
+    all[ailment] = answers || {};
+    try { localStorage.setItem(this.key, JSON.stringify(all)); } catch {}
+  },
+  clear(ailment){
+    const all = this.getAll();
+    delete all[ailment];
+    try { localStorage.setItem(this.key, JSON.stringify(all)); } catch {}
+  }
+};
 
 const BRANDS = {
   "Acetaminophen": ["Tylenol", "Children’s Tylenol", "Store brand acetaminophen"],
