@@ -442,13 +442,18 @@ function QuestionBlock({q, value, onChange}) {
 }
 
 function QuestionsForm({aName, questions, answers, onChange, onSubmit, showDosing, onOpenDosing}) {
+  const list = Array.isArray(questions) ? questions : [];
   return (
     <div className="card">
       <div className="title">{aName} — Intake</div>
       <hr />
-      {questions.map(q => (
-        <QuestionBlock key={q.id} q={q} value={answers[q.id]} onChange={onChange} />
-      ))}
+      {list.length === 0 ? (
+        <div className="muted">No questions configured yet for this ailment.</div>
+      ) : (
+        list.map(q => (
+          <QuestionBlock key={q.id} q={q} value={answers[q.id]} onChange={onChange} />
+        ))
+      )}
       <div className="row no-print" style={{marginTop:12}}>
         <button className="btn btn-primary" onClick={onSubmit}>Get Recommendation</button>
         {showDosing && (
