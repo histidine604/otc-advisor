@@ -636,37 +636,57 @@ function Results({aName, payload, showBrands}) {
 /* ----------------------- Root App ----------------------- */
 
 function App() {
-  const ailments = CORE; // if you have extra DATA.ailments, merge here
+  const ailments = CORE;
+
   // pick the first ailment that actually has questions
   const validKeys = Object.keys(ailments).filter(k => Array.isArray(ailments[k]?.questions));
-  const [ailmentKey, setAilmentKey] = React.useState(validKeys[0] ?? Object.keys(ailments)[0]);
-  const [answers, setAnswers] = React.useState({});
+
+  // (new) respect URL hash if present, else first valid key
+  const initialFromHash = (location.hash || "").replace(/^#/, "");
+  const initialKey = validKeys.includes(initialFromHash) ? initialFromHash : (validKeys[0] ?? Object.keys(ailments)[0]);
+
+  const [ailmentKey, setAilmentKey] = React.useState(initialKey);
+  const [answers, setAnswers] = React.useState(() => AnswerStore.get(initialKey)); // load saved
   const [result, setResult] = React.useState(null);
   const [showBrands, setShowBrands] = React.useState(BrandPref.get());
   const [dosingOpen, setDosingOpen] = React.useState(false);
   const a = ailments[ailmentKey];
 
+  // keep URL hash in sync (nice little deep-link)
+  React.useEffect(()=>{ if (ailmentKey) location.hash = ailmentKey; }, [ailmentKey]);
+
   const showDosing = React.useMemo(()=>{
-    // Call with empty answers to see if this ailment wants dosing tool visible
     try { return !!a.recommend({}).showDosing; } catch { return false; }
   }, [a]);
 
+  // (updated) when answers change, save them
   function onChangeAnswer(id, value){
-    setAnswers(prev => ({ ...prev, [id]: value }));
+    setAnswers(prev => {
+      const next = { ...prev, [id]: value };
+      AnswerStore.set(ailmentKey, next);
+      return next;
+    });
   }
 
   function onSubmit(){
     const normalized = normalizeAnswers(answers);
     const payload = a.recommend(normalized);
     setResult(payload);
-    // Scroll to results
     setTimeout(()=>{
       const el = document.getElementById('root');
       if (el) window.scrollTo({ top: el.offsetTop + 240, behavior: 'smooth' });
     }, 0);
   }
 
+  // (updated) on ailment change: swap answers to those saved for that ailment
+  function changeAilment(k){
+    setAilmentKey(k);
+    setAnswers(AnswerStore.get(k));
+    setResult(null);
+  }
+
   function onReset(){
+    AnswerStore.clear(ailmentKey);
     setAnswers({});
     setResult(null);
     window.scrollTo({ top: 0, behavior:'smooth' });
@@ -684,7 +704,7 @@ function App() {
         <AilmentPicker
           ailments={ailments}
           value={ailmentKey}
-          onChange={(k)=>{ setAilmentKey(k); setAnswers({}); setResult(null); }}
+          onChange={changeAilment}   // <-- uses the new function
           onReset={onReset}
         />
         <QuestionsForm
