@@ -616,7 +616,9 @@ function Results({aName, payload, showBrands}) {
 
 function App() {
   const ailments = CORE; // if you have extra DATA.ailments, merge here
-  const [ailmentKey, setAilmentKey] = React.useState(Object.keys(ailments)[0]);
+  // pick the first ailment that actually has questions
+  const validKeys = Object.keys(ailments).filter(k => Array.isArray(ailments[k]?.questions));
+  const [ailmentKey, setAilmentKey] = React.useState(validKeys[0] ?? Object.keys(ailments)[0]);
   const [answers, setAnswers] = React.useState({});
   const [result, setResult] = React.useState(null);
   const [showBrands, setShowBrands] = React.useState(BrandPref.get());
