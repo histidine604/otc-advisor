@@ -79,12 +79,51 @@ function card(title, examples, how, warn, brandKey){
 }
 
 const CORE = {
-  /* ---------------- Existing ---------------- */
-  allergic_rhinitis: { /* …keep your current version… */ },
-  fever: { /* …keep your current version… */ },
-
-  /* ---------------- Added ailments ---------------- */
-
+  allergic_rhinitis: {
+  name:"Allergic Rhinitis",
+  questions:[
+    AgeGroupInput("agegrp","Age group"),
+    { id:"severity", type:"select", label:"How bad are symptoms?", options:["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required:true },
+    { id:"symptoms", type:"multiselect", label:"Main symptoms", options:["Sneezing/itching","Rhinorrhea (runny nose)","Nasal congestion","Ocular symptoms (itchy/watery eyes)"]}
+  ],
+  recommend:(a)=>{
+    const refer=[], notes=[], recs=[], nonDrug=[];
+    const ag=a.agegrp, sev=a.severity, sym=a.symptoms||[];
+    nonDrug.push("Avoid triggers; saline irrigation.");
+    if (ag==="0-1") { notes.push("For infants: saline + pediatric evaluation."); return {refer,notes,recs,nonDrug,showDosing:false}; }
+    const hasCong=sym.includes("Nasal congestion"), eyes=sym.includes("Ocular symptoms (itchy/watery eyes)");
+    if (sev==="Moderate/Severe (affects sleep/daily life)" || hasCong){
+      recs.push(card("Intranasal corticosteroid (INCS)",["Flonase (fluticasone)","Rhinocort (budesonide)","Nasacort (triamcinolone)"],"Daily; proper technique.","Irritation/epistaxis possible.","INCS"));
+      if (eyes) recs.push(card("Oral non‑sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Mild drowsiness (cetirizine).","Cetirizine"));
+    } else {
+      recs.push(card("Oral non‑sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Less helpful for congestion alone.","Cetirizine"));
+    }
+    return { refer, notes, recs, nonDrug, showDosing:false };
+  }
+},
+fever: {
+  name:"Fever",
+  questions:[
+    AgeGroupInput("agegrp","Age group"),
+    { id:"temp", type:"select", label:"Highest temperature (°F)", options:["<100.4","100.4–102.2","102.3–104",">104"], required:true },
+    { id:"duration", type:"select", label:"How long?", options:["<24 hours","1–3 days",">3 days"], required:true }
+  ],
+  recommend:(a)=>{
+    const refer=[], notes=[], recs=[], nonDrug=[]; const ag=a.agegrp;
+    if (ag==="0-1") notes.push("If <3 months with ≥100.4°F → immediate medical evaluation.");
+    nonDrug.push("Hydration; light clothing; avoid cold baths/alcohol rubs.");
+    if (ag==="0-1"){
+      recs.push(card("Acetaminophen",["acetaminophen"],"Per label by weight.","Avoid duplicate APAP.","Acetaminophen"));
+    } else if (ag==="2-12"){
+      recs.push(card("Acetaminophen",["acetaminophen"],"Per label by weight.","Avoid max daily dose.","Acetaminophen"));
+      recs.push(card("Ibuprofen (≥6 months)",["ibuprofen"],"Per label by weight.","Avoid if dehydration/ulcer/renal risk.","Ibuprofen"));
+    } else {
+      recs.push(card("Acetaminophen",["acetaminophen"],"As directed.","Max per label/health status.","Acetaminophen"));
+      recs.push(card("Ibuprofen",["ibuprofen"],"As directed with food if GI upset.","Avoid if ulcer/kidney disease/late pregnancy.","Ibuprofen"));
+    }
+    return { refer, notes, recs, nonDrug, showDosing:true };
+  }
+},
   nasal_congestion: {
     name: "Nasal Congestion",
     questions: [
