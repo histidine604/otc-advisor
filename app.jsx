@@ -598,6 +598,28 @@ function RecommendationCard({r, showBrands}) {
   );
 }
 
+function planToText(aName, payload){
+  const { refer=[], notes=[], recs=[], nonDrug=[] } = payload || {};
+  const lines = [];
+  lines.push(`${aName} — Recommendation`);
+  if (refer.length){ lines.push("", "Refer:", ...refer.map(x=>`• ${x}`)); }
+  if (recs.length){
+    lines.push("", "OTC options:");
+    recs.forEach(r=>{
+      const title = r?.title || "Option";
+      const examples = (r?.examples && r.examples.length) ? `Examples: ${r.examples.join(", ")}` : "";
+      const how = r?.how ? `How: ${r.how}` : "";
+      const warn = r?.warn ? `Notes: ${r.warn}` : "";
+      lines.push(`• ${title}${examples?` — ${examples}`:""}`);
+      if (how) lines.push(`   ${how}`);
+      if (warn) lines.push(`   ${warn}`);
+    });
+  }
+  if (nonDrug.length){ lines.push("", "Non-drug measures:", ...nonDrug.map(x=>`• ${x}`)); }
+  if (notes.length){ lines.push("", "Important:", notes.join(" ")); }
+  return lines.join("\n");
+}
+
 function Results({aName, payload, showBrands}) {
   const [query, setQuery] = React.useState("");
   const { refer=[], notes=[], recs=[], nonDrug=[] } = payload || {};
@@ -607,6 +629,14 @@ function Results({aName, payload, showBrands}) {
     const q = query.toLowerCase();
     return recs.filter(r => (JSON.stringify(r) || "").toLowerCase().includes(q));
   }, [recs, query]);
+
+  function copyPlan(){
+    const txt = planToText(aName, payload);
+    navigator.clipboard.writeText(txt).then(
+      ()=>alert("Plan copied to clipboard ✅"),
+      ()=>alert("Could not copy. (Your browser may block clipboard access.)")
+    );
+  }
 
   return (
     <div className="card">
@@ -619,6 +649,7 @@ function Results({aName, payload, showBrands}) {
           value={query}
           onChange={(e)=>setQuery(e.target.value)}
         />
+        <button className="btn btn-ghost" type="button" onClick={copyPlan}>Copy plan</button>
       </div>
 
       {refer.length > 0 && (
@@ -650,6 +681,7 @@ function Results({aName, payload, showBrands}) {
     </div>
   );
 }
+
 
 /* ----------------------- Root App ----------------------- */
 
