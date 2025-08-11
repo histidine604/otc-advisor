@@ -3,104 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OTC Advisor (MVP)</title>
-  <link rel="stylesheet" href="styles.css?v=v2.6.1" />
+  <title>OTC Advisor (React)</title>
+  <link rel="stylesheet" href="styles.css?v=react-1" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="header-left">
-        <h1>OTC Advisor (MVP)</h1>
-        <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice.</p>
-      </div>
-      <div class="header-right no-print">
-        <label class="brand-toggle">
-          <input id="brandToggle" type="checkbox" checked />
-          <span>Show brand examples</span>
-        </label>
-        <button class="btn btn-primary" id="printBtn">Print/Save</button>
-      </div>
-    </div>
-  </header>
+  <div id="root"></div>
 
-  <div id="errorBanner" class="error-banner" hidden></div>
+  <!-- React 18 + ReactDOM (UMD) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel (dev-friendly; ok for internal/testing; switch to Vite later) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <main>
-    <div class="card">
-      <div class="row">
-        <div>
-          <label for="ailment">Choose an ailment</label>
-          <select id="ailment">
-            <option value="fever">Fever</option>
-            <option value="cough">Cough</option>
-            <option value="heartburn">Heartburn / Indigestion</option>
-            <option value="constipation">Constipation</option>
-            <option value="allergic_rhinitis">Allergic Rhinitis</option>
-            <option value="nasal_congestion">Nasal Congestion</option>
-            <option value="sore_throat">Sore Throat</option>
-            <option value="diarrhea">Diarrhea</option>
-            <option value="cold">Common Cold</option>
-            <option value="sleep">Sleep Difficulty</option>
-            <option value="pain">Pain</option>
-            <option value="multi">Multi‑Symptom</option>
-          </select>
-        </div>
-        <div class="no-print" style="align-self:flex-end;">
-          <button class="btn btn-ghost" id="resetBtn">Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="questions" class="card"></div>
-    <div id="result" class="card"></div>
-  </main>
-
-  <!-- Dosing modal -->
-  <div id="dosingModal" class="modal no-print" hidden>
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="title">Pediatric/Adult Dosing Calculator</div>
-        <button id="closeModal" class="btn btn-ghost">Close</button>
-      </div>
-      <hr />
-      <div class="row">
-        <div class="card" style="flex:1 1 300px;">
-          <label>Units</label>
-          <div class="chip-group" id="unitChips">
-            <div class="chip active" data-value="kg">kg</div>
-            <div class="chip" data-value="lb">lb</div>
-          </div>
-          <label for="weightInput">Weight</label>
-          <input id="weightInput" type="number" min="0" step="0.1" placeholder="Enter weight" />
-          <div class="muted" id="unitHint">Using kilograms (kg)</div>
-          <hr />
-          <div class="muted">Label-standard ranges:</div>
-          <ul class="muted">
-            <li>Acetaminophen: 10–15 mg/kg q4–6h (max 75 mg/kg/day; adult OTC max 3,000–4,000 mg/day per label/health status).</li>
-            <li>Ibuprofen (≥6 months): 5–10 mg/kg q6–8h (max 40 mg/kg/day; adult OTC max 1,200 mg/day).</li>
-          </ul>
-        </div>
-        <div class="card" style="flex:1 1 360px;">
-          <div class="title">Acetaminophen</div>
-          <div id="apapDoses" class="dose-grid"></div>
-          <div class="muted">Common liquids: 160 mg/5 mL. Tablets: 325 mg, 500 mg.</div>
-        </div>
-        <div class="card" style="flex:1 1 360px;">
-          <div class="title">Ibuprofen</div>
-          <div id="ibuDoses" class="dose-grid"></div>
-          <div class="muted">Common liquids: 100 mg/5 mL. Tablets: 200 mg.</div>
-        </div>
-      </div>
-      <div class="note" style="margin-top:12px;">
-        <strong>Safety notes:</strong> Avoid duplicate acetaminophen; avoid ibuprofen in infants &lt;6 months, late pregnancy, dehydration, ulcer/renal risk. Reference product labels.
-      </div>
-    </div>
-  </div>
-
-  <footer class="footer no-print">
-    OTC Advisor <strong>v2.6.1</strong> — <span id="buildDate">2025-08-09 21:38</span>
-  </footer>
-
-  <script src="app.js?v=v2.6.1"></script>
+  <!-- Your app (JSX) -->
+  <script type="text/babel" data-presets="env,react" src="app.jsx?v=react-1"></script>
 </body>
 </html>
