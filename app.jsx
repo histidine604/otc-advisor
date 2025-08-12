@@ -87,8 +87,8 @@ const Dosing = (() => {
 
 /* ----------------------- Domain Model ----------------------- */
 
-const AgeGroupInput = (id, label) => ({
-  id, type: "agegroup", label, groups: [
+const AgeGroupInput = (id, label, required=false) => ({
+  id, type: "agegroup", label, required, groups: [
     { value: "0-1", label: "0–1 year" },
     { value: "2-12", label: "2–12 years" },
     { value: ">12", label: ">12 years" },
@@ -103,7 +103,7 @@ const CORE = {
   allergic_rhinitis: {
   name:"Allergic Rhinitis",
   questions:[
-    AgeGroupInput("agegrp","Age group"),
+    AgeGroupInput("agegrp","Age group", true),
     { id:"severity", type:"select", label:"How bad are symptoms?", options:["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required:true },
     { id:"symptoms", type:"multiselect", label:"Main symptoms", options:["Sneezing/itching","Rhinorrhea (runny nose)","Nasal congestion","Ocular symptoms (itchy/watery eyes)"]}
   ],
@@ -125,7 +125,7 @@ const CORE = {
 fever: {
   name:"Fever",
   questions:[
-    AgeGroupInput("agegrp","Age group"),
+    AgeGroupInput("agegrp","Age group", true),
     { id:"temp", type:"select", label:"Highest temperature (°F)", options:["<100.4","100.4–102.2","102.3–104",">104"], required:true },
     { id:"duration", type:"select", label:"How long?", options:["<24 hours","1–3 days",">3 days"], required:true }
   ],
@@ -148,7 +148,7 @@ fever: {
   nasal_congestion: {
     name: "Nasal Congestion",
     questions: [
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"duration", type:"select", label:"How long?", options:["<3 days","3–7 days",">7 days"], required:true },
       { id:"hx", type:"multiselect", label:"History", options:["Pregnant","Uncontrolled hypertension","Glaucoma/BPH/urinary retention"] }
     ],
@@ -168,7 +168,7 @@ fever: {
   cough: {
     name:"Cough",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"type", type:"select", label:"Cough type", options:["Dry","Wet/productive","Unknown"], required:true },
       { id:"duration", type:"select", label:"Duration", options:["<1 week","1–3 weeks",">3 weeks"], required:true },
       { id:"red", type:"multiselect", label:"Any of these?", options:["Shortness of breath","Chest pain","Bloody sputum","High fever","Asthma/COPD"] }
@@ -193,7 +193,7 @@ fever: {
   heartburn: {
     name:"Heartburn / Indigestion",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"freq", type:"select", label:"How often?", options:["Occasional (<2 days/week)","Frequent (≥2 days/week)"], required:true },
       { id:"alarm", type:"multiselect", label:"Any alarm features?", options:["Trouble swallowing","Unintentional weight loss","Vomiting blood/black stools","Severe chest pain"] }
     ],
@@ -215,7 +215,7 @@ fever: {
   constipation: {
     name:"Constipation",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"duration", type:"select", label:"How long?", options:["<3 days","3–7 days",">7 days"], required:true },
       { id:"features", type:"multiselect", label:"Features", options:["Hard stools","Straining","Painful stools","Blood in stool","Recent opioid use"] }
     ],
@@ -236,7 +236,7 @@ fever: {
   sore_throat: {
     name:"Sore Throat",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"assoc", type:"multiselect", label:"Associated symptoms", options:["Fever","Cough","Runny nose","Rash","Swollen lymph nodes","Trouble breathing/swallowing"] }
     ],
     recommend:(a)=>{
@@ -252,7 +252,7 @@ fever: {
   diarrhea: {
     name:"Diarrhea",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"features", type:"multiselect", label:"Any of these?", options:["Blood or black stools","High fever","Severe dehydration","Recent antibiotic use","Travel exposure"] }
     ],
     recommend:(a)=>{
@@ -271,7 +271,7 @@ fever: {
   cold: {
     name:"Common Cold",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"symptoms", type:"multiselect", label:"Symptoms", options:["Nasal congestion","Runny nose","Cough","Sore throat","Fever","Body aches"] }
     ],
     recommend:(a)=>{
@@ -289,7 +289,7 @@ fever: {
   sleep: {
     name:"Sleep Difficulty",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"pattern", type:"select", label:"Pattern", options:["Trouble falling asleep","Frequent awakenings","Jet lag/shift change"], required:true },
       { id:"contra", type:"multiselect", label:"Avoid sedating antihistamines if…", options:["Glaucoma","BPH/urinary retention","Elderly/fall risk","Pregnant/breastfeeding"] }
     ],
@@ -309,7 +309,7 @@ fever: {
   pain: {
     name:"Pain",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"site", type:"select", label:"Pain type", options:["Headache","Muscle/joint pain","Dental pain","Dysmenorrhea","Other"], required:true },
       { id:"gi", type:"multiselect", label:"Risk factors", options:["Ulcer history","Kidney disease","Anticoagulant use","Late pregnancy"] }
     ],
@@ -332,7 +332,7 @@ fever: {
   multi: {
     name:"Multi‑Symptom",
     questions:[
-      AgeGroupInput("agegrp","Age group"),
+      AgeGroupInput("agegrp","Age group", true),
       { id:"goals", type:"multiselect", label:"What do you want to treat?", options:["Fever/pain","Nasal congestion","Runny nose/sneezing","Cough","Sleep at night"] }
     ],
     recommend:(a)=>{
@@ -806,5 +806,5 @@ function App() {
 }
 
 /* ----------------------- Mount ----------------------- */
-const root = window.ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
