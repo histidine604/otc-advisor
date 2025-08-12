@@ -368,7 +368,7 @@ function normalizeAnswers(answersRaw) {
 
 /* ----------------------- React components ----------------------- */
 
-function SiteHeader({showBrands, onToggleBrands, onPrint}) {
+function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
   return (
     <header className="site-header">
       <div className="header-inner">
@@ -382,15 +382,13 @@ function SiteHeader({showBrands, onToggleBrands, onPrint}) {
             <span>Show brand examples</span>
           </label>
           <button className="btn btn-primary" type="button" onClick={onSubmit}>
-  Get Recommendation
-</button>
-
+            Get Recommendation
+          </button>
         </div>
       </div>
     </header>
   );
 }
-
 function AilmentPicker({ailments, value, onChange, onReset}) {
   return (
     <div className="card">
@@ -772,7 +770,7 @@ function App() {
 
   return (
     <>
-      <SiteHeader showBrands={showBrands} onToggleBrands={toggleBrands} onPrint={()=>window.print()} />
+      <SiteHeader showBrands={showBrands} onToggleBrands={toggleBrands} onPrint={()=>window.print()} onSubmit={onSubmit} />
       <main>
         <AilmentPicker
           ailments={ailments}
