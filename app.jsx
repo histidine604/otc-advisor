@@ -434,10 +434,11 @@ function QuestionBlock({q, value, onChange}) {
         <ChipGroup groups={q.groups} value={value ?? null} onChange={(v)=>onChange(q.id, v)} />
       )}
       {q.type === 'select' && (
-        <select value={value ?? ''} onChange={(e)=>onChange(q.id, e.target.value)}>
-          {q.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-      )}
+  <select value={value ?? ''} onChange={(e)=>onChange(q.id, e.target.value)}>
+    <option value="" disabled>Select an option…</option>
+    {q.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+  </select>
+)}
       {q.type === 'multiselect' && (
         <div className="multi">
           {q.options.map((opt, i) => {
