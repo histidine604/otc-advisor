@@ -101,7 +101,7 @@ function card(title, examples, how, warn, brandKey){
 
 const CORE = {
   allergic_rhinitis: {
-  name:"Allergic Rhinitis",
+  name:"Allergies",
   questions:[
     AgeGroupInput("agegrp","Age group", true),
     { id:"severity", type:"select", label:"How bad are symptoms?", options:["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required:true },
@@ -391,13 +391,16 @@ function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
 }
 
 function AilmentPicker({ailments, value, onChange, onReset}) {
+  // Sort the ailments alphabetically by name
+  const sortedAilments = Object.entries(ailments).sort(([, a], [, b]) => a.name.localeCompare(b.name));
+  
   return (
     <div className="card">
       <div className="row">
         <div>
           <label htmlFor="ailment">Choose an ailment</label>
           <select id="ailment" value={value} onChange={(e)=>onChange(e.target.value)}>
-            {Object.entries(ailments).map(([k,v]) => (
+            {sortedAilments.map(([k,v]) => (
               <option key={k} value={k}>{v.name || k}</option>
             ))}
           </select>
