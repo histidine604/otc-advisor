@@ -389,6 +389,7 @@ function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
     </header>
   );
 }
+
 function AilmentPicker({ailments, value, onChange, onReset}) {
   return (
     <div className="card">
