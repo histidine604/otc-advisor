@@ -381,7 +381,10 @@ function SiteHeader({showBrands, onToggleBrands, onPrint}) {
             <input type="checkbox" checked={showBrands} onChange={(e)=>onToggleBrands(e.target.checked)} />
             <span>Show brand examples</span>
           </label>
-          <button className="btn btn-primary" onClick={onPrint}>Print/Save</button>
+          <button className="btn btn-primary" type="button" onClick={onSubmit}>
+  Get Recommendation
+</button>
+
         </div>
       </div>
     </header>
@@ -719,14 +722,33 @@ function App() {
   }
 
   function onSubmit(){
+  try {
     const normalized = normalizeAnswers(answers);
-    const payload = a.recommend(normalized);
-    setResult(payload);
+    const payload = a && typeof a.recommend === "function"
+      ? a.recommend(normalized) || {}
+      : {};
+
+    // minimal fallback so Results always renders something
+    const safePayload = {
+      refer: Array.isArray(payload.refer) ? payload.refer : [],
+      notes: Array.isArray(payload.notes) ? payload.notes : [],
+      recs:  Array.isArray(payload.recs)  ? payload.recs  : [],
+      nonDrug: Array.isArray(payload.nonDrug) ? payload.nonDrug : [],
+      showDosing: !!payload.showDosing
+    };
+
+    setResult(safePayload);
+
+    // Scroll to results (defer so React can render first)
     setTimeout(()=>{
-      const el = document.getElementById('root');
-      if (el) window.scrollTo({ top: el.offsetTop + 240, behavior: 'smooth' });
+      window.scrollTo({ top: document.body.scrollTop + 280, behavior: 'smooth' });
     }, 0);
+  } catch (err) {
+    console.error("Recommend error:", err);
+    alert("Sorry—something went wrong creating the plan. Check the console for details.");
   }
+}
+
 
   // (updated) on ailment change: swap answers to those saved for that ailment
   function changeAilment(k){
