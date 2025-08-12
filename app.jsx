@@ -114,10 +114,10 @@ const CORE = {
     if (ag==="0-1") { notes.push("For infants: saline + pediatric evaluation."); return {refer,notes,recs,nonDrug,showDosing:false}; }
     const hasCong=sym.includes("Nasal congestion"), eyes=sym.includes("Ocular symptoms (itchy/watery eyes)");
     if (sev==="Moderate/Severe (affects sleep/daily life)" || hasCong){
-      recs.push(card("Intranasal corticosteroid (INCS)",["Flonase (fluticasone)","Rhinocort (budesonide)","Nasacort (triamcinolone)"],"Daily; proper technique.","Irritation/epistaxis possible.","INCS"));
-      if (eyes) recs.push(card("Oral non‑sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Mild drowsiness (cetirizine).","Cetirizine"));
+      recs.push(card("Intranasal corticosteroid (INCS)",["Flonase (fluticasone)", "Nasacort (triamcinolone)", "Rhinocort (budesonide)"],"Daily; proper technique.","Irritation/epistaxis possible.","INCS"));
+      if (eyes) recs.push(card("Oral non‑sedating antihistamine",["cetirizine", "loratadine", "fexofenadine"],"Once daily.","Mild drowsiness (cetirizine).","Cetirizine"));
     } else {
-      recs.push(card("Oral non‑sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Less helpful for congestion alone.","Cetirizine"));
+      recs.push(card("Oral non‑sedating antihistamine",["cetirizine", "loratadine", "fexofenadine"],"Once daily.","Less helpful for congestion alone.","Cetirizine"));
     }
     return { refer, notes, recs, nonDrug, showDosing:false };
   }
@@ -156,10 +156,10 @@ fever: {
       const recs=[], notes=[], nonDrug=[], refer=[];
       const hx=a.hx||[];
       nonDrug.push("Saline spray/irrigation, humidifier, hydrate; elevate head during sleep.");
-      recs.push(card("Intranasal corticosteroid (INCS)",["fluticasone","triamcinolone","budesonide"],"1–2 sprays/nostril daily; allow several days for full effect.","Irritation/epistaxis possible.","INCS"));
+      recs.push(card("Intranasal corticosteroid (INCS)",["fluticasone", "triamcinolone", "budesonide"],"1–2 sprays/nostril daily; allow several days for full effect.","Irritation/epistaxis possible.","INCS"));
       recs.push(card("Short‑term topical decongestant",["oxymetazoline"],"Use up to 3 days for severe congestion.",">3 days can cause rebound congestion (rhinitis medicamentosa).","Oxymetazoline"));
       if (!hx.includes("Uncontrolled hypertension"))
-        recs.push(card("Oral decongestant",["pseudoephedrine","phenylephrine"],"As directed on label.","Avoid with uncontrolled HTN, certain eye/urinary conditions, or stimulant sensitivity.","Pseudoephedrine"));
+        recs.push(card("Oral decongestant",["pseudoephedrine", "phenylephrine"],"As directed on label.","Avoid with uncontrolled HTN, certain eye/urinary conditions, or stimulant sensitivity.","Pseudoephedrine"));
       if (a.duration === ">7 days") notes.push("If symptoms persist >7–10 days or worsen, consider evaluation.");
       return { refer, notes, recs, nonDrug, showDosing:false };
     }
@@ -224,10 +224,10 @@ fever: {
       if ((a.features||[]).includes("Blood in stool")) refer.push("Blood in stool → medical evaluation.");
       nonDrug.push("Gradually increase fiber, fluids, and physical activity.");
       recs.push(card("Osmotic laxative",["PEG 3350"],"Once daily; titrate to soft stools.","Onset 1–3 days.","PEG 3350"));
-      recs.push(card("Bulk fiber",["psyllium","methylcellulose"],"Daily with water.","Gas/bloating possible initially.","Psyllium (fiber)"));
+      recs.push(card("Bulk fiber",["psyllium", "methylcellulose"],"Daily with water.","Gas/bloating possible initially.","Psyllium (fiber)"));
       recs.push(card("Stool softener",["docusate"],"Adjunct if hard stools predominate.","Variable benefit.","Docusate"));
       if ((a.features||[]).includes("Recent opioid use")) notes.push("Consider stimulant laxative for opioid‑induced constipation (senna/bisacodyl).");
-      recs.push(card("Stimulant (rescue)",["senna","bisacodyl"],"PRN, preferably at bedtime.","Cramping possible; short‑term use.","Senna"));
+      recs.push(card("Stimulant (rescue)",["senna", "bisacodyl"],"PRN, preferably at bedtime.","Cramping possible; short‑term use.","Senna"));
       if (a.duration === ">7 days") notes.push("Constipation >1 week despite OTC measures → consider evaluation.");
       return { refer, notes, recs, nonDrug, showDosing:false };
     }
@@ -243,7 +243,7 @@ fever: {
       const recs=[], notes=[], nonDrug=[], refer=[];
       if ((a.assoc||[]).includes("Trouble breathing/swallowing")) refer.push("Difficulty breathing or swallowing → urgent evaluation.");
       nonDrug.push("Warm fluids; saline gargles; throat lozenges/sprays (age‑appropriate); humidified air.");
-      recs.push(card("Pain/fever relief",["acetaminophen","ibuprofen (≥6 months)"],"As directed on label.","Avoid duplicate acetaminophen; ibuprofen cautions (GI/renal/pregnancy).","Acetaminophen"));
+      recs.push(card("Pain/fever relief",["acetaminophen", "ibuprofen (≥6 months)"],"As directed on label.","Avoid duplicate acetaminophen; ibuprofen cautions (GI/renal/pregnancy).","Acetaminophen"));
       notes.push("Cough/runny nose favor viral; absence of cough with fever + tender lymph nodes may suggest strep—seek testing if concerned.");
       return { refer, notes, recs, nonDrug, showDosing:true };
     }
@@ -278,9 +278,9 @@ fever: {
       const recs=[], notes=[], nonDrug=[], refer=[];
       nonDrug.push("Rest, fluids, humidifier, saline irrigation, honey (≥1 year).");
       const s=a.symptoms||[];
-      if (s.includes("Nasal congestion")) recs.push(card("INCS or short‑term oxymetazoline",["fluticasone","oxymetazoline"],"INCS daily; oxymetazoline ≤3 days.","Rebound risk with prolonged topical decongestants.","Oxymetazoline"));
-      if (s.includes("Cough")) recs.push(card("Dextromethorphan / Guaifenesin",["dextromethorphan","guaifenesin"],"As directed; hydrate well.","DM interactions; guaifenesin needs fluids.","Dextromethorphan"));
-      if (s.includes("Body aches") || s.includes("Fever")) recs.push(card("Analgesic/antipyretic",["acetaminophen","ibuprofen (≥6 months)"],"As directed.","Watch max doses and duplicates.","Acetaminophen"));
+      if (s.includes("Nasal congestion")) recs.push(card("INCS or short‑term oxymetazoline",["fluticasone", "oxymetazoline"],"INCS daily; oxymetazoline ≤3 days.","Rebound risk with prolonged topical decongestants.","Oxymetazoline"));
+      if (s.includes("Cough")) recs.push(card("Dextromethorphan / Guaifenesin",["dextromethorphan", "guaifenesin"],"As directed; hydrate well.","DM interactions; guaifenesin needs fluids.","Dextromethorphan"));
+      if (s.includes("Body aches") || s.includes("Fever")) recs.push(card("Analgesic/antipyretic",["acetaminophen", "ibuprofen (≥6 months)"],"As directed.","Watch max doses and duplicates.","Acetaminophen"));
       notes.push("Avoid multi‑symptom combos when possible; pick single‑ingredient products for targeted relief.");
       return { refer, notes, recs, nonDrug, showDosing:true };
     }
@@ -297,7 +297,7 @@ fever: {
       const recs=[], notes=[], nonDrug=[], refer=[];
       nonDrug.push("Sleep hygiene: consistent schedule, cool/dark room, limit screens/caffeine, wind‑down routine.");
       if (!(a.contra||[]).some(x=>["Glaucoma","BPH/urinary retention","Elderly/fall risk","Pregnant/breastfeeding"].includes(x))) {
-        recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine","doxylamine"],"Occasional use only.","Next‑day drowsiness/anticholinergic effects; avoid chronic use.","Diphenhydramine"));
+        recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine", "doxylamine"],"Occasional use only.","Next‑day drowsiness/anticholinergic effects; avoid chronic use.","Diphenhydramine"));
       } else {
         notes.push("Sedating antihistamines not advised given risk factors selected.");
       }
@@ -318,7 +318,7 @@ fever: {
       nonDrug.push("RICE for acute strains/sprains; heat for chronic muscle tightness.");
       recs.push(card("Acetaminophen",["acetaminophen"],"As directed; good baseline option.","Beware duplicate APAP across products.","Acetaminophen"));
       if (!(a.gi||[]).some(x=>["Ulcer history","Kidney disease","Late pregnancy"].includes(x))) {
-        recs.push(card("NSAID (ibuprofen/naproxen)",["ibuprofen","naproxen"],"With food if GI upset; follow max doses.","Avoid with ulcer history, renal disease, late pregnancy.","Ibuprofen"));
+        recs.push(card("NSAID (ibuprofen/naproxen)",["ibuprofen", "naproxen"],"With food if GI upset; follow max doses.","Avoid with ulcer history, renal disease, late pregnancy.","Ibuprofen"));
       } else {
         notes.push("NSAIDs may not be appropriate given selected risk factors.");
       }
@@ -339,11 +339,11 @@ fever: {
       const recs=[], notes=[], nonDrug=[], refer=[];
       nonDrug.push("Fluids, rest, humidifier, saline.");
       const g=a.goals||[];
-      if (g.includes("Fever/pain")) recs.push(card("Acetaminophen or ibuprofen",["acetaminophen","ibuprofen"],"As directed on label.","Avoid duplicate APAP; ibuprofen cautions.","Acetaminophen"));
-      if (g.includes("Nasal congestion")) recs.push(card("INCS / short‑term oxymetazoline / pseudoephedrine",["fluticasone","oxymetazoline","pseudoephedrine"],"Target congestion specifically.","Topical ≤3 days; oral decongestants not for certain conditions.","Pseudoephedrine"));
-      if (g.includes("Runny nose/sneezing")) recs.push(card("Non‑sedating antihistamine",["cetirizine","loratadine","fexofenadine"],"Once daily.","Less helpful for pure congestion.","Cetirizine"));
-      if (g.includes("Cough")) recs.push(card("Dextromethorphan ± Guaifenesin",["dextromethorphan","guaifenesin"],"Per label.","Check interactions; hydrate.","Dextromethorphan"));
-      if (g.includes("Sleep at night")) recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine","doxylamine"],"Occasional nights only.","Anticholinergic effects; avoid in elderly, glaucoma, BPH, pregnancy.","Diphenhydramine"));
+      if (g.includes("Fever/pain")) recs.push(card("Acetaminophen or ibuprofen",["acetaminophen", "ibuprofen"],"As directed on label.","Avoid duplicate APAP; ibuprofen cautions.","Acetaminophen"));
+      if (g.includes("Nasal congestion")) recs.push(card("INCS / short‑term oxymetazoline / pseudoephedrine",["fluticasone", "oxymetazoline", "pseudoephedrine"],"Target congestion specifically.","Topical ≤3 days; oral decongestants not for certain conditions.","Pseudoephedrine"));
+      if (g.includes("Runny nose/sneezing")) recs.push(card("Non‑sedating antihistamine",["cetirizine", "loratadine", "fexofenadine"],"Once daily.","Less helpful for pure congestion.","Cetirizine"));
+      if (g.includes("Cough")) recs.push(card("Dextromethorphan ± Guaifenesin",["dextromethorphan", "guaifenesin"],"Per label.","Check interactions; hydrate.","Dextromethorphan"));
+      if (g.includes("Sleep at night")) recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine", "doxylamine"],"Occasional nights only.","Anticholinergic effects; avoid in elderly, glaucoma, BPH, pregnancy.","Diphenhydramine"));
       notes.push("Prefer single‑ingredient products to avoid duplicate/contraindicated ingredients.");
       return { refer, notes, recs, nonDrug, showDosing:true };
     }
@@ -635,7 +635,7 @@ function Results({aName, payload, showBrands}) {
 
   function copyPlan(){
     const txt = planToText(aName, payload);
-    navigator.clipboard.writeText(txt).then(
+    document.execCommand('copy').then(
       ()=>alert("Plan copied to clipboard ✅"),
       ()=>alert("Could not copy. (Your browser may block clipboard access.)")
     );
@@ -806,5 +806,5 @@ function App() {
 }
 
 /* ----------------------- Mount ----------------------- */
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = window.ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
