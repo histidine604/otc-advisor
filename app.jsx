@@ -493,7 +493,7 @@ function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
     <header className="site-header">
       <div className="header-inner">
         <div className="header-left">
-          <h1>OTC Advisor (React)</h1>
+          <h1>Pharmacists Recommends(React)</h1>
           <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice.</p>
         </div>
         <div className="header-right no-print">
@@ -920,7 +920,7 @@ function App() {
         )}
       </main>
       <footer className="footer no-print">
-        OTC Advisor <strong>React</strong> — <span id="buildDate">{new Date().toISOString().slice(0,16).replace('T',' ')}</span>
+        Pharmacists Recommends <strong>React</strong> — <span id="buildDate">{new Date().toISOString().slice(0,16).replace('T',' ')}</span>
       </footer>
 
       <DosingModal open={dosingOpen} onClose={()=>setDosingOpen(false)} />
