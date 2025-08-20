@@ -942,9 +942,11 @@ function App() {
 
 /* ----------------------- Mount ----------------------- */
 // This logic ensures that the React app is only mounted once,
-// which resolves the "createRoot() on a container that has already been passed" warning.
-const rootElement = document.getElementById('root');
-if (rootElement && !rootElement._reactRootContainer) {
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(React.createElement(App));
-}
+// and that it waits for the whole page to be ready.
+window.onload = () => {
+    const rootElement = document.getElementById('root');
+    if (rootElement && !rootElement._reactRootContainer) {
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    }
+};
