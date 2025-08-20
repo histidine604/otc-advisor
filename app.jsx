@@ -727,7 +727,7 @@ function RecommendationCard({r, showBrands}) {
 function planToText(aName, payload){
   const { refer=[], notes=[], recs=[], nonDrug=[] } = payload || {};
   const lines = [];
-  lines.push(`Tobi the pharmacists recommends:`);
+  lines.push(`Tobi the Pharmacists recommends:`);
   if (refer.length){ lines.push("", "Refer:", ...refer.map(x=>`• ${x}`)); }
   if (recs.length){
     lines.push("", "OTC options:");
@@ -774,7 +774,7 @@ function Results({aName, payload, showBrands}) {
 
   return (
     <div className="card">
-      <div className="title">Tobi the pharmacists recommends:</div>
+      <div className="title">Tobi the Pharmacists recommends:</div>
       <hr />
       <div className="row no-print">
         <input
@@ -872,7 +872,7 @@ function App() {
 
     // Scroll to results (defer so React can render first)
     setTimeout(()=>{
-      const resultsElement = document.querySelector('.card:has(.title:contains("Tobi the pharmacists recommends:"))');
+      const resultsElement = document.querySelector('.card:has(.title:contains("Tobi the Pharmacists recommends:"))');
         if (resultsElement) {
             resultsElement.scrollIntoView({ behavior: 'smooth' });
         }
@@ -905,7 +905,7 @@ function App() {
   }
 
   return (
-    <>
+    <React.Fragment>
       <SiteHeader showBrands={showBrands} onToggleBrands={toggleBrands} onPrint={()=>window.print()} onSubmit={onSubmit} />
       <main>
         <AilmentPicker
@@ -936,12 +936,15 @@ function App() {
       </footer>
 
       <DosingModal open={dosingOpen} onClose={()=>setDosingOpen(false)} />
-    </>
+    </React.Fragment>
   );
 }
 
 /* ----------------------- Mount ----------------------- */
-// This assumes you have a div with id="root" in your HTML,
-// and that React and ReactDOM are loaded.
-// const root = ReactDOM.createRoot(document.getElementById('root'));
-// root.render(<App />);
+// This logic ensures that the React app is only mounted once,
+// which resolves the "createRoot() on a container that has already been passed" warning.
+const rootElement = document.getElementById('root');
+if (rootElement && !rootElement._reactRootContainer) {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(React.createElement(App));
+}
