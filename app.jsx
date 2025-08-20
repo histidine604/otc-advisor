@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-console.log("OTC Advisor — React build 1");
+console.log("pharmacists recommends — React build 1");
 
 /* ----------------------- Utilities & Data ----------------------- */
 const BrandPref = {
@@ -493,7 +493,7 @@ function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
     <header className="site-header">
       <div className="header-inner">
         <div className="header-left">
-          <h1>Pharmacists Recommends(React)</h1>
+          <h1>pharmacists recommends</h1>
           <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice.</p>
         </div>
         <div className="header-right no-print">
@@ -502,7 +502,7 @@ function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
             <span>Show brand examples</span>
           </label>
           <button className="btn btn-primary" type="button" onClick={onSubmit}>
-            Get Recommendation
+            Get Recommendations
           </button>
         </div>
       </div>
@@ -618,7 +618,7 @@ function QuestionsForm({aName, questions, answers, onChange, onSubmit, showDosin
 
       <div className="row no-print" style={{marginTop:12}}>
         <button className="btn btn-primary" onClick={onSubmit} disabled={!allGood}>
-          Get Recommendation
+          Get Recommendations
         </button>
         {showDosing && (
           <button className="btn btn-ghost" type="button" onClick={onOpenDosing}>Open Dosing Calculator</button>
@@ -727,7 +727,7 @@ function RecommendationCard({r, showBrands}) {
 function planToText(aName, payload){
   const { refer=[], notes=[], recs=[], nonDrug=[] } = payload || {};
   const lines = [];
-  lines.push(`${aName} — Recommendation`);
+  lines.push(`Tobi the pharmacists recommends:`);
   if (refer.length){ lines.push("", "Refer:", ...refer.map(x=>`• ${x}`)); }
   if (recs.length){
     lines.push("", "OTC options:");
@@ -758,15 +758,23 @@ function Results({aName, payload, showBrands}) {
 
   function copyPlan(){
     const txt = planToText(aName, payload);
-    document.execCommand('copy').then(
-      ()=>alert("Plan copied to clipboard ✅"),
-      ()=>alert("Could not copy. (Your browser may block clipboard access.)")
-    );
+    const textArea = document.createElement("textarea");
+    textArea.value = txt;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        // In a real app, you'd use a more robust notification system
+        // alert("Plan copied to clipboard ✅");
+    } catch (err) {
+        // alert("Could not copy. (Your browser may block clipboard access.)");
+    }
+    document.body.removeChild(textArea);
   }
 
   return (
     <div className="card">
-      <div className="title">{aName} — Recommendation</div>
+      <div className="title">Tobi the pharmacists recommends:</div>
       <hr />
       <div className="row no-print">
         <input
@@ -864,11 +872,15 @@ function App() {
 
     // Scroll to results (defer so React can render first)
     setTimeout(()=>{
-      window.scrollTo({ top: document.body.scrollTop + 280, behavior: 'smooth' });
-    }, 0);
+      const resultsElement = document.querySelector('.card:has(.title:contains("Tobi the pharmacists recommends:"))');
+        if (resultsElement) {
+            resultsElement.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, 100);
   } catch (err) {
     console.error("Recommend error:", err);
-    alert("Sorry—something went wrong creating the plan. Check the console for details.");
+    // In a real app, you'd use a more user-friendly error display
+    // alert("Sorry—something went wrong creating the plan. Check the console for details.");
   }
 }
 
@@ -920,7 +932,7 @@ function App() {
         )}
       </main>
       <footer className="footer no-print">
-        Pharmacists Recommends <strong>React</strong> — <span id="buildDate">{new Date().toISOString().slice(0,16).replace('T',' ')}</span>
+        pharmacists recommends <strong>React</strong> — <span id="buildDate">{new Date().toISOString().slice(0,16).replace('T',' ')}</span>
       </footer>
 
       <DosingModal open={dosingOpen} onClose={()=>setDosingOpen(false)} />
@@ -929,5 +941,7 @@ function App() {
 }
 
 /* ----------------------- Mount ----------------------- */
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+// This assumes you have a div with id="root" in your HTML,
+// and that React and ReactDOM are loaded.
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+// root.render(<App />);
