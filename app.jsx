@@ -507,7 +507,7 @@ function DosingModal({ open, onClose }) {
             </div>
           </div>
           <div className="mt-6 p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg">
-            <strong>Disclaimer:</strong> This is a tool for estimation. Always verify dosing with official product labeling or a healthcare professional. Avoid ibuprofen in infants <6 months.
+            <strong>Disclaimer:</strong> This is a tool for estimation. Always verify dosing with official product labeling or a healthcare professional. Avoid ibuprofen in infants &lt;6 months.
           </div>
         </div>
       </div>
