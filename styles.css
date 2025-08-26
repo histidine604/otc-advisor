@@ -71,4 +71,4 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 16px 0; }
 [hidden]{ display:none !important; }
 .footer { max-width:1100px; margin: 8px auto 24px; padding: 0 16px; color:#475569; font-size:13px; }
 .error-banner { max-width:1100px; margin: 12px auto 0; padding: 10px 12px; background:#fee2e2; color:#7f1d1d; border:1px solid #fecaca; border-radius:8px; }
-@media print { .no-print { display:none; } .print-only { display: block; } body { background:white; } main{ margin:0; } }
+@media print { .no-print { display:none; } .print-only { display: block; } body { background:white; } main{ margin:0; } 
