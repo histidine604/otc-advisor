@@ -24,7 +24,10 @@
 
   <!-- Babel compiles app.jsx in the browser (great for now; we can move to Vite later) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+  
+<!-- add just after the Babel standalone script and before the app script -->
+<script src="debug.js"></script>
+<script type="text/babel" data-presets="env,react" src="app.jsx?v=react-3"></script>
   <!-- 
     Your React app.
     IMPORTANT: Make sure this src value "app.jsx" exactly matches the name of your JSX file on the server.
