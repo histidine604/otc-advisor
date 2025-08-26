@@ -3,11 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- public/index.html -->
-  <title>Pharm Rex</title>
+  <title>Pharmacist Recommends</title>
 
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Your styles -->
+  <!-- 
+    Your custom styles. 
+    IMPORTANT: Make sure this href value "styles.css" exactly matches the name of your CSS file on the server.
+  -->
   <link rel="stylesheet" href="styles.css?v=react-3" />
 </head>
 <body>
@@ -21,7 +25,10 @@
   <!-- Babel compiles app.jsx in the browser (great for now; we can move to Vite later) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Your React app -->
+  <!-- 
+    Your React app.
+    IMPORTANT: Make sure this src value "app.jsx" exactly matches the name of your JSX file on the server.
+  -->
   <script type="text/babel" data-presets="env,react" src="app.jsx?v=react-3"></script>
 
   <noscript>This app needs JavaScript enabled.</noscript>
