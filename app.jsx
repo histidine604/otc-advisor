@@ -1,15 +1,11 @@
 /* eslint-disable no-undef */
-console.log("pharmacists recommends — React build 1");
+// PharmRex — A React Application for OTC Recommendations
+console.log("PharmRex — React build 1");
 
 /* ----------------------- Utilities & Data ----------------------- */
-const BrandPref = {
-  key: "otc_show_brands",
-  get(){ try { return JSON.parse(localStorage.getItem(this.key) ?? "true"); } catch { return true; } },
-  set(v){ try { localStorage.setItem(this.key, JSON.stringify(!!v)); } catch {} }
-};
-/* Persist answers per ailment */
+// Persists user's previously selected answers for each ailment.
 const AnswerStore = {
-  key: "otc_answers_v1",
+  key: "pharmrex_answers_v2",
   getAll(){
     try { return JSON.parse(localStorage.getItem(this.key) || "{}"); } catch { return {}; }
   },
@@ -29,12 +25,13 @@ const AnswerStore = {
   }
 };
 
+// Maps generic drug names to common brand names.
 const BRANDS = {
   "Acetaminophen": ["Tylenol", "Children’s Tylenol", "Store brand acetaminophen"],
   "Ibuprofen": ["Advil", "Motrin", "Children’s Advil/Motrin"],
   "Naproxen": ["Aleve"],
   "PEG 3350": ["MiraLAX"],
-  "Psyllium (fiber)": ["Metamucil"],
+  "Psyllium (fiber)": ["Metamuci"],
   "Methylcellulose (fiber)": ["Citrucel"],
   "Docusate": ["Colace"],
   "Senna": ["Senokot"],
@@ -42,7 +39,7 @@ const BRANDS = {
   "Oxymetazoline": ["Afrin"],
   "Pseudoephedrine": ["Sudafed"],
   "Phenylephrine": ["Sudafed PE"],
-  "INCS": ["Flonase (fluticasone)", "Nasacort (triamcinolone)", "Rhinocort (budesonide)"],
+  "INCS": ["Flonase (fluticasone)", "Nasacort (triamcinolone)"],
   "Cetirizine": ["Zyrtec"],
   "Loratadine": ["Claritin"],
   "Fexofenadine": ["Allegra"],
@@ -56,10 +53,10 @@ const BRANDS = {
 };
 
 /** Small helper for null-safe brand text */
-function brandText(key, fallbacks) {
-  if (!key) return (fallbacks||[]).join(", ");
-  if (BRANDS[key]) return BRANDS[key].join(", ");
-  return (fallbacks||[]).join(", ");
+function brandText(key) {
+  if (!key) return "N/A";
+  if (BRANDS[key]) return BRANDS[key].join(" / ");
+  return "N/A";
 }
 
 /** Dosing helper kept as a tiny service (logic only) */
@@ -80,392 +77,110 @@ const Dosing = (() => {
   const volFor = (mg, per5) => {
     if (!mg || !per5) return null;
     const mL = (mg / per5) * 5;
-    return Math.round(mL / 2.5) * 2.5;
+    return Math.round(mL * 2) / 2; // Round to nearest 0.5 mL
   };
   return { setUnit, setWeight, apapDose, ibuDose, volFor };
 })();
 
 /* ----------------------- Domain Model ----------------------- */
 
-const AgeGroupInput = (id, label, required=false) => ({
-  id, type: "agegroup", label, required, groups: [
-    { value: "0-1", label: "0–1 year" },
-    { value: "2-12", label: "2–12 years" },
-    { value: ">12", label: ">12 years" },
-  ]
-});
-
-function card(title, examples, how, warn, brandKey){
-  return { title, examples, how, warn, brandKey };
+// A factory for recommendation objects.
+function card(title, brandKey, how, warn){
+  return { title, brandKey, how, warn };
 }
 
+// The core data model for ailments, questions, and recommendation logic.
 const CORE = {
   allergic_rhinitis: {
-  name:"Allergies",
+  name:"Allergies (Allergic Rhinitis)",
   questions:[
-    {
-      id: "agegrp",
-      type: "agegroup",
-      label: "Age group",
-      required: true,
-      groups: [
-        { value: "0-1", label: "0–1 year" },
-        { value: "2-12", label: "2–12 years" },
-        { value: ">12", label: ">12 years" },
-      ]
-    },
+    { id: "agegrp", type: "agegroup", label: "Age group", required: true, groups: [{ value: "2-12", label: "2–12 years" }, { value: ">12", label: ">12 years" }] },
     { id:"severity", type:"select", label:"How bad are symptoms?", options:["Mild (not daily life-limiting)","Moderate/Severe (affects sleep/daily life)"], required:true },
-    { id:"symptoms", type:"multiselect", label:"Main symptoms", options:["Sneezing/itching","Rhinorrhea (runny nose)","Nasal congestion","Ocular symptoms (itchy/watery eyes)"]}
+    { id:"symptoms", type:"multiselect", label:"Main symptoms", options:["Sneezing/itching","Runny nose","Nasal congestion","Itchy/watery eyes"]}
   ],
   recommend:(a)=>{
     const refer=[], notes=[], recs=[], nonDrug=[];
-    const ag=a.agegrp, sev=a.severity, sym=a.symptoms||[];
-    nonDrug.push("Avoid triggers; saline irrigation.");
-    if (ag==="0-1") { notes.push("For infants: saline + pediatric evaluation."); return {refer,notes,recs,nonDrug,showDosing:false}; }
-    const hasCong=sym.includes("Nasal congestion"), eyes=sym.includes("Ocular symptoms (itchy/watery eyes)");
-    if (sev==="Moderate/Severe (affects sleep/daily life)" || hasCong){
-      recs.push(card("Intranasal corticosteroid (INCS)",["Flonase (fluticasone)", "Nasacort (triamcinolone)", "Rhinocort (budesonide)"],"Daily; proper technique.","Irritation/epistaxis possible.","INCS"));
-      if (eyes) recs.push(card("Oral non‑sedating antihistamine",["cetirizine", "loratadine", "fexofenadine"],"Once daily.","Mild drowsiness (cetirizine).","Cetirizine"));
+    const { severity, symptoms = [] } = a;
+    nonDrug.push("Avoid triggers; use saline nasal sprays or irrigation.");
+    const hasCongestion = symptoms.includes("Nasal congestion");
+    const hasEyeSymptoms = symptoms.includes("Itchy/watery eyes");
+
+    if (severity === "Moderate/Severe (affects sleep/daily life)" || hasCongestion){
+      recs.push(card("Intranasal Steroid", "INCS", "Use daily for best results. Proper spray technique is key.", "May cause nasal irritation or dryness."));
+      if (hasEyeSymptoms) {
+        recs.push(card("Oral Antihistamine", "Cetirizine", "Take once daily as needed.", "Cetirizine (Zyrtec) may cause mild drowsiness."));
+      }
     } else {
-      recs.push(card("Oral non‑sedating antihistamine",["cetirizine", "loratadine", "fexofenadine"],"Once daily.","Less helpful for congestion alone.","Cetirizine"));
+      recs.push(card("Oral Antihistamine", "Loratadine", "Take once daily as needed.", "Non-drowsy for most people. Less effective for congestion alone."));
     }
     return { refer, notes, recs, nonDrug, showDosing:false };
   }
 },
 fever: {
-  name:"Fever",
+  name:"Fever / Pain",
   questions:[
-    {
-      id: "agegrp",
-      type: "agegroup",
-      label: "Age group",
-      required: true,
-      groups: [
-        { value: "0-1", label: "0–1 year" },
-        { value: "2-12", label: "2–12 years" },
-        { value: ">12", label: ">12 years" },
-      ]
-    },
-    { id:"temp", type:"select", label:"Highest temperature (°F)", options:["<100.4","100.4–102.2","102.3–104",">104"], required:true },
+    { id: "agegrp", type: "agegroup", label: "Age group", required: true, groups: [{ value: "0-1", label: "0–1 year" }, { value: "2-12", label: "2–12 years" }, { value: ">12", label: ">12 years" }] },
+    { id:"temp", type:"select", label:"Highest temperature (°F)", options:["<100.4","100.4–102.2",">102.2"], required:true },
     { id:"duration", type:"select", label:"How long?", options:["<24 hours","1–3 days",">3 days"], required:true }
   ],
   recommend:(a)=>{
-    const refer=[], notes=[], recs=[], nonDrug=[]; const ag=a.agegrp;
-    if (ag==="0-1") notes.push("If <3 months with ≥100.4°F → immediate medical evaluation.");
-    nonDrug.push("Hydration; light clothing; avoid cold baths/alcohol rubs.");
-    if (ag==="0-1"){
-      recs.push(card("Acetaminophen",["acetaminophen"],"Per label by weight.","Avoid duplicate APAP.","Acetaminophen"));
-    } else if (ag==="2-12"){
-      recs.push(card("Acetaminophen",["acetaminophen"],"Per label by weight.","Avoid max daily dose.","Acetaminophen"));
-      recs.push(card("Ibuprofen (≥6 months)",["ibuprofen"],"Per label by weight.","Avoid if dehydration/ulcer/renal risk.","Ibuprofen"));
-    } else {
-      recs.push(card("Acetaminophen",["acetaminophen"],"As directed.","Max per label/health status.","Acetaminophen"));
-      recs.push(card("Ibuprofen",["ibuprofen"],"As directed with food if GI upset.","Avoid if ulcer/kidney disease/late pregnancy.","Ibuprofen"));
+    const refer=[], notes=[], recs=[], nonDrug=[];
+    const { agegrp } = a;
+    if (agegrp === "0-1") notes.push("For infants <3 months with a fever of 100.4°F or higher, seek immediate medical evaluation.");
+    nonDrug.push("Encourage hydration with water or electrolyte solutions. Use light clothing and avoid cold baths.");
+    
+    recs.push(card("Acetaminophen", "Acetaminophen", "Follow weight-based dosing on the package.", "Do not exceed the maximum daily dose. Avoid other products containing acetaminophen."));
+    if (agegrp !== "0-1") {
+        recs.push(card("Ibuprofen", "Ibuprofen", "Take with food to reduce stomach upset. Follow weight-based dosing.", "Not for infants under 6 months. Avoid if there's a risk of dehydration, kidney issues, or stomach ulcers."));
+    }
+     if (agegrp === ">12") {
+        recs.push(card("Naproxen", "Naproxen", "Longer-acting option for adults, take with food.", "Same precautions as ibuprofen."));
     }
     return { refer, notes, recs, nonDrug, showDosing:true };
   }
 },
-  nasal_congestion: {
-    name: "Nasal Congestion",
-    questions: [
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"duration", type:"select", label:"How long?", options:["<3 days","3–7 days",">7 days"], required:true },
-      { id:"hx", type:"multiselect", label:"History", options:["Pregnant","Uncontrolled hypertension","Glaucoma/BPH/urinary retention"] }
-    ],
-    recommend: (a) => {
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      const hx=a.hx||[];
-      nonDrug.push("Saline spray/irrigation, humidifier, hydrate; elevate head during sleep.");
-      recs.push(card("Intranasal corticosteroid (INCS)",["fluticasone", "triamcinolone", "budesonide"],"1–2 sprays/nostril daily; allow several days for full effect.","Irritation/epistaxis possible.","INCS"));
-      recs.push(card("Short‑term topical decongestant",["oxymetazoline"],"Use up to 3 days for severe congestion.",">3 days can cause rebound congestion (rhinitis medicamentosa).","Oxymetazoline"));
-      if (!hx.includes("Uncontrolled hypertension"))
-        recs.push(card("Oral decongestant",["pseudoephedrine", "phenylephrine"],"As directed on label.","Avoid with uncontrolled HTN, certain eye/urinary conditions, or stimulant sensitivity.","Pseudoephedrine"));
-      if (a.duration === ">7 days") notes.push("If symptoms persist >7–10 days or worsen, consider evaluation.");
-      return { refer, notes, recs, nonDrug, showDosing:false };
-    }
-  },
-
-  cough: {
-    name:"Cough",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"type", type:"select", label:"Cough type", options:["Dry","Wet/productive","Unknown"], required:true },
-      { id:"duration", type:"select", label:"Duration", options:["<1 week","1–3 weeks",">3 weeks"], required:true },
-      { id:"red", type:"multiselect", label:"Any of these?", options:["Shortness of breath","Chest pain","Bloody sputum","High fever","Asthma/COPD"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      const red=a.red||[];
-      if (red.length) refer.push("Red‑flag symptoms present (SOB, chest pain, hemoptysis, high fever, severe underlying disease). Seek medical care.");
-      nonDrug.push("Honey for ≥1 year olds; humidifier; hydrate; avoid smoke/irritants.");
-      if (a.type==="Dry") {
-        recs.push(card("Dextromethorphan",["dextromethorphan"],"Per label up to q6–8h or ER q12h.","Avoid with MAOIs/serotonergic interactions.","Dextromethorphan"));
-      }
-      if (a.type==="Wet/productive" || a.type==="Unknown") {
-        recs.push(card("Guaifenesin",["guaifenesin"],"With plenty of water.","GI upset possible.","Guaifenesin"));
-      }
-      notes.push("Avoid OTC cough/cold combos in young children; follow age labeling.");
-      if (a.duration === ">3 weeks") notes.push("Cough >3 weeks → consider evaluation (post‑viral cough, asthma, GERD, etc.).");
-      return { refer, notes, recs, nonDrug, showDosing:false };
-    }
-  },
-
-  heartburn: {
-    name:"Heartburn / Indigestion",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"freq", type:"select", label:"How often?", options:["Occasional (<2 days/week)","Frequent (≥2 days/week)"], required:true },
-      { id:"alarm", type:"multiselect", label:"Any alarm features?", options:["Trouble swallowing","Unintentional weight loss","Vomiting blood/black stools","Severe chest pain"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      if ((a.alarm||[]).length) refer.push("Alarm symptoms present. Seek medical evaluation.");
-      nonDrug.push("Smaller meals; avoid late meals; limit triggers (fat, caffeine, alcohol); elevate head of bed; weight management if applicable.");
-      if (a.freq==="Occasional (<2 days/week)") {
-        recs.push(card("Antacid (rapid relief)",["calcium carbonate, magnesium/aluminum salts"],"As needed per label.","Short‑acting; watch for constipation/diarrhea depending on salt."));
-        recs.push(card("H2 blocker",["famotidine"],"Before meals or at symptoms onset.","Tolerance possible with daily use."));
-      } else {
-        recs.push(card("PPI short course",["omeprazole"],"Daily for 14 days then reassess.","Takes 1–4 days for full effect. Don’t combine with other acid reducers unless directed."));
-      }
-      notes.push("Persistent symptoms despite OTC therapy → evaluation for GERD or other causes.");
-      return { refer, notes, recs, nonDrug, showDosing:false };
-    }
-  },
-
   constipation: {
     name:"Constipation",
     questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"duration", type:"select", label:"How long?", options:["<3 days","3–7 days",">7 days"], required:true },
-      { id:"features", type:"multiselect", label:"Features", options:["Hard stools","Straining","Painful stools","Blood in stool","Recent opioid use"] }
+      { id: "agegrp", type: "agegroup", label: "Age group", required: true, groups: [{ value: "2-12", label: "2–12 years" }, { value: ">12", label: ">12 years" }] },
+      { id:"duration", type:"select", label:"How long?", options:["<1 week",">1 week"], required:true },
+      { id:"features", type:"multiselect", label:"Features", options:["Hard stools","Straining","Recent opioid use", "Blood in stool"] }
     ],
     recommend:(a)=>{
       const recs=[], notes=[], nonDrug=[], refer=[];
-      if ((a.features||[]).includes("Blood in stool")) refer.push("Blood in stool → medical evaluation.");
-      nonDrug.push("Gradually increase fiber, fluids, and physical activity.");
-      recs.push(card("Osmotic laxative",["PEG 3350"],"Once daily; titrate to soft stools.","Onset 1–3 days.","PEG 3350"));
-      recs.push(card("Bulk fiber",["psyllium", "methylcellulose"],"Daily with water.","Gas/bloating possible initially.","Psyllium (fiber)"));
-      recs.push(card("Stool softener",["docusate"],"Adjunct if hard stools predominate.","Variable benefit.","Docusate"));
-      if ((a.features||[]).includes("Recent opioid use")) notes.push("Consider stimulant laxative for opioid‑induced constipation (senna/bisacodyl).");
-      recs.push(card("Stimulant (rescue)",["senna", "bisacodyl"],"PRN, preferably at bedtime.","Cramping possible; short‑term use.","Senna"));
-      if (a.duration === ">7 days") notes.push("Constipation >1 week despite OTC measures → consider evaluation.");
+      if ((a.features||[]).includes("Blood in stool")) refer.push("Blood in stool requires medical evaluation to rule out serious conditions.");
+      nonDrug.push("Gradually increase fiber intake (fruits, vegetables), drink plenty of water, and increase physical activity.");
+      
+      recs.push(card("Osmotic Laxative", "PEG 3350", "Mix powder in a full glass of water. Works gently over 1-3 days.", "Generally well-tolerated. Can be used daily."));
+      recs.push(card("Fiber Supplement", "Psyllium (fiber)", "Mix with plenty of water and drink immediately.", "May cause gas or bloating initially."));
+      recs.push(card("Stool Softener", "Docusate", "Useful for hard, dry stools, especially if straining should be avoided.", "Often used in combination with other laxatives."));
+      recs.push(card("Stimulant (for rescue)", "Senna", "Use for occasional, short-term relief. Works overnight.", "Can cause cramping. Not for long-term use without medical advice."));
+      
+      if ((a.features||[]).includes("Recent opioid use")) notes.push("For opioid-induced constipation, a stimulant laxative (like Senna or Bisacodyl) is often needed in addition to a stool softener.");
       return { refer, notes, recs, nonDrug, showDosing:false };
     }
   },
-
-  sore_throat: {
-    name:"Sore Throat",
+  cough: {
+    name:"Cough",
     questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"assoc", type:"multiselect", label:"Associated symptoms", options:["Fever","Cough","Runny nose","Rash","Swollen lymph nodes","Trouble breathing/swallowing"] }
+      { id: "agegrp", type: "agegroup", label: "Age group", required: true, groups: [{ value: "2-12", label: "2–12 years" }, { value: ">12", label: ">12 years" }] },
+      { id:"type", type:"select", label:"Cough type", options:["Dry (no mucus)","Productive (with mucus)"], required:true },
+      { id:"duration", type:"select", label:"Duration", options:["<1 week","1–3 weeks",">3 weeks"], required:true },
+      { id:"red", type:"multiselect", label:"Any of these?", options:["Shortness of breath","Chest pain","High fever","Asthma/COPD"] }
     ],
     recommend:(a)=>{
       const recs=[], notes=[], nonDrug=[], refer=[];
-      if ((a.assoc||[]).includes("Trouble breathing/swallowing")) refer.push("Difficulty breathing or swallowing → urgent evaluation.");
-      nonDrug.push("Warm fluids; saline gargles; throat lozenges/sprays (age‑appropriate); humidified air.");
-      recs.push(card("Pain/fever relief",["acetaminophen", "ibuprofen (≥6 months)"],"As directed on label.","Avoid duplicate acetaminophen; ibuprofen cautions (GI/renal/pregnancy).","Acetaminophen"));
-      notes.push("Cough/runny nose favor viral; absence of cough with fever + tender lymph nodes may suggest strep—seek testing if concerned.");
-      return { refer, notes, recs, nonDrug, showDosing:true };
-    }
-  },
-
-  diarrhea: {
-    name:"Diarrhea",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"features", type:"multiselect", label:"Any of these?", options:["Blood or black stools","High fever","Severe dehydration","Recent antibiotic use","Travel exposure"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      const f=a.features||[];
-      if (f.includes("Blood or black stools") || f.includes("Severe dehydration")) refer.push("Red flags present → medical evaluation.");
-      nonDrug.push("Oral rehydration solution first; small frequent sips.");
-      recs.push(card("Loperamide (adults)",["loperamide"],"Start per label, then after each loose stool up to max.","Avoid if blood/high fever or suspected dysentery.","Loperamide"));
-      recs.push(card("Bismuth subsalicylate (adults)",["bismuth subsalicylate"],"Per label.","Avoid with aspirin allergy, certain meds, pregnancy; may darken stool/tongue.","Bismuth subsalicylate"));
-      if (f.includes("Recent antibiotic use")) notes.push("Consider possibility of C. difficile if severe/persistent—seek care.");
-      if (f.includes("Travel exposure")) notes.push("Traveler’s diarrhea: fluids, consider bismuth; seek care if severe.");
+      if ((a.red||[]).length) refer.push("Symptoms like shortness of breath, chest pain, or high fever require medical attention.");
+      nonDrug.push("Stay hydrated with warm fluids. Use a humidifier. For children over 1 year, honey can soothe the throat.");
+      
+      if (a.type==="Dry (no mucus)") {
+        recs.push(card("Cough Suppressant", "Dextromethorphan", "Use as directed to reduce the urge to cough.", "Check for drug interactions, especially with antidepressants (SSRIs/MAOIs)."));
+      }
+      if (a.type==="Productive (with mucus)") {
+        recs.push(card("Expectorant", "Guaifenesin", "Take with a full glass of water to help thin mucus.", "Its main function is to make coughs more productive."));
+      }
+      notes.push("Avoid multi-symptom cold products in young children. A cough lasting more than 3 weeks should be evaluated by a doctor.");
       return { refer, notes, recs, nonDrug, showDosing:false };
-    }
-  },
-
-  cold: {
-    name:"Common Cold",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"symptoms", type:"multiselect", label:"Symptoms", options:["Nasal congestion","Runny nose","Cough","Sore throat","Fever","Body aches"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      nonDrug.push("Rest, fluids, humidifier, saline irrigation, honey (≥1 year).");
-      const s=a.symptoms||[];
-      if (s.includes("Nasal congestion")) recs.push(card("INCS or short‑term oxymetazoline",["fluticasone", "oxymetazoline"],"INCS daily; oxymetazoline ≤3 days.","Rebound risk with prolonged topical decongestants.","Oxymetazoline"));
-      if (s.includes("Cough")) recs.push(card("Dextromethorphan / Guaifenesin",["dextromethorphan", "guaifenesin"],"As directed; hydrate well.","DM interactions; guaifenesin needs fluids.","Dextromethorphan"));
-      if (s.includes("Body aches") || s.includes("Fever")) recs.push(card("Analgesic/antipyretic",["acetaminophen", "ibuprofen (≥6 months)"],"As directed.","Watch max doses and duplicates.","Acetaminophen"));
-      notes.push("Avoid multi‑symptom combos when possible; pick single‑ingredient products for targeted relief.");
-      return { refer, notes, recs, nonDrug, showDosing:true };
-    }
-  },
-
-  sleep: {
-    name:"Sleep Difficulty",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"pattern", type:"select", label:"Pattern", options:["Trouble falling asleep","Frequent awakenings","Jet lag/shift change"], required:true },
-      { id:"contra", type:"multiselect", label:"Avoid sedating antihistamines if…", options:["Glaucoma","BPH/urinary retention","Elderly/fall risk","Pregnant/breastfeeding"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      nonDrug.push("Sleep hygiene: consistent schedule, cool/dark room, limit screens/caffeine, wind‑down routine.");
-      if (!(a.contra||[]).some(x=>["Glaucoma","BPH/urinary retention","Elderly/fall risk","Pregnant/breastfeeding"].includes(x))) {
-        recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine", "doxylamine"],"Occasional use only.","Next‑day drowsiness/anticholinergic effects; avoid chronic use.","Diphenhydramine"));
-      } else {
-        notes.push("Sedating antihistamines not advised given risk factors selected.");
-      }
-      notes.push("Persistent insomnia ≥3 weeks → evaluate for underlying causes (pain, OSA, anxiety, meds).");
-      return { refer, notes, recs, nonDrug, showDosing:false };
-    }
-  },
-
-  pain: {
-    name:"Pain",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"site", type:"select", label:"Pain type", options:["Headache","Muscle/joint pain","Dental pain","Dysmenorrhea","Other"], required:true },
-      { id:"gi", type:"multiselect", label:"Risk factors", options:["Ulcer history","Kidney disease","Anticoagulant use","Late pregnancy"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      nonDrug.push("RICE for acute strains/sprains; heat for chronic muscle tightness.");
-      recs.push(card("Acetaminophen",["acetaminophen"],"As directed; good baseline option.","Beware duplicate APAP across products.","Acetaminophen"));
-      if (!(a.gi||[]).some(x=>["Ulcer history","Kidney disease","Late pregnancy"].includes(x))) {
-        recs.push(card("NSAID (ibuprofen/naproxen)",["ibuprofen", "naproxen"],"With food if GI upset; follow max doses.","Avoid with ulcer history, renal disease, late pregnancy.","Ibuprofen"));
-      } else {
-        notes.push("NSAIDs may not be appropriate given selected risk factors.");
-      }
-      if (a.site==="Muscle/joint pain") {
-        recs.push(card("Topical diclofenac (adults)",["diclofenac gel"],"Apply to affected area as labeled.","Avoid on broken skin; wash hands.","Diclofenac gel"));
-      }
-      return { refer, notes, recs, nonDrug, showDosing:true };
-    }
-  },
-
-  multi: {
-    name:"Multi‑Symptom",
-    questions:[
-      {
-        id: "agegrp",
-        type: "agegroup",
-        label: "Age group",
-        required: true,
-        groups: [
-          { value: "0-1", label: "0–1 year" },
-          { value: "2-12", label: "2–12 years" },
-          { value: ">12", label: ">12 years" },
-        ]
-      },
-      { id:"goals", type:"multiselect", label:"What do you want to treat?", options:["Fever/pain","Nasal congestion","Runny nose/sneezing","Cough","Sleep at night"] }
-    ],
-    recommend:(a)=>{
-      const recs=[], notes=[], nonDrug=[], refer=[];
-      nonDrug.push("Fluids, rest, humidifier, saline.");
-      const g=a.goals||[];
-      if (g.includes("Fever/pain")) recs.push(card("Acetaminophen or ibuprofen",["acetaminophen", "ibuprofen"],"As directed on label.","Avoid duplicate APAP; ibuprofen cautions.","Acetaminophen"));
-      if (g.includes("Nasal congestion")) recs.push(card("INCS / short‑term oxymetazoline / pseudoephedrine",["fluticasone", "oxymetazoline", "pseudoephedrine"],"Target congestion specifically.","Topical ≤3 days; oral decongestants not for certain conditions.","Pseudoephedrine"));
-      if (g.includes("Runny nose/sneezing")) recs.push(card("Non‑sedating antihistamine",["cetirizine", "loratadine", "fexofenadine"],"Once daily.","Less helpful for pure congestion.","Cetirizine"));
-      if (g.includes("Cough")) recs.push(card("Dextromethorphan ± Guaifenesin",["dextromethorphan", "guaifenesin"],"Per label.","Check interactions; hydrate.","Dextromethorphan"));
-      if (g.includes("Sleep at night")) recs.push(card("Sedating antihistamine (short‑term)",["diphenhydramine", "doxylamine"],"Occasional nights only.","Anticholinergic effects; avoid in elderly, glaucoma, BPH, pregnancy.","Diphenhydramine"));
-      notes.push("Prefer single‑ingredient products to avoid duplicate/contraindicated ingredients.");
-      return { refer, notes, recs, nonDrug, showDosing:true };
     }
   },
 };
@@ -486,23 +201,34 @@ function normalizeAnswers(answersRaw) {
   return out;
 }
 
-/* ----------------------- React components ----------------------- */
+// Simple check to see if a required question has a valid answer.
+function isAnswered(q, answers){
+  const v = answers[q.id];
+  if (!q.required) return true;
+  if (Array.isArray(v)) return v.length > 0;
+  return v != null && String(v).trim() !== "";
+}
 
-function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
+
+/* ----------------------- React Components ----------------------- */
+
+function SiteHeader({ onReset }) {
   return (
-    <header className="site-header">
-      <div className="header-inner">
-        <div className="header-left">
-          <h1>pharmacists recommends</h1>
-          <p>Quick OTC guidance for common self-care issues. Not a substitute for medical advice.</p>
-        </div>
-        <div className="header-right no-print">
-          <label className="brand-toggle">
-            <input type="checkbox" checked={showBrands} onChange={(e)=>onToggleBrands(e.target.checked)} />
-            <span>Show brand examples</span>
-          </label>
-          <button className="btn btn-primary" type="button" onClick={onSubmit}>
-            Get Recommendations
+    <header className="bg-white shadow-sm sticky top-0 z-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-3">
+          <div className="flex items-center space-x-2">
+             <svg className="w-8 h-8 text-teal-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.311a15.045 15.045 0 0 1-7.5 0C4.508 19.662 2.25 17.439 2.25 14.85V8.25a.75.75 0 0 1 .75-.75h18a.75.75 0 0 1 .75.75v6.6c0 2.589-2.258 4.812-4.5 5.161Z" />
+            </svg>
+            <h1 className="text-2xl font-bold text-slate-800">PharmRex</h1>
+          </div>
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+          >
+            Start Over
           </button>
         </div>
       </div>
@@ -510,443 +236,363 @@ function SiteHeader({showBrands, onToggleBrands, onPrint, onSubmit}) {
   );
 }
 
-function AilmentPicker({ailments, value, onChange, onReset}) {
-  // Sort the ailments alphabetically by name
-  const sortedAilments = Object.entries(ailments).sort(([, a], [, b]) => a.name.localeCompare(b.name));
+function AilmentPicker({ ailments, value, onChange }) {
+  const sortedAilments = React.useMemo(() => 
+    Object.entries(ailments).sort(([, a], [, b]) => a.name.localeCompare(b.name)),
+    [ailments]
+  );
   
   return (
-    <div className="card">
-      <div className="row">
-        <div>
-          <label htmlFor="ailment">Choose an ailment</label>
-          <select id="ailment" value={value} onChange={(e)=>onChange(e.target.value)}>
-            {sortedAilments.map(([k,v]) => (
-              <option key={k} value={k}>{v.name || k}</option>
-            ))}
-          </select>
-        </div>
-        <div className="no-print" style={{alignSelf:'flex-end'}}>
-          <button className="btn btn-ghost" onClick={onReset}>Reset</button>
-        </div>
-      </div>
+    <div>
+      <label htmlFor="ailment" className="block text-sm font-bold text-slate-700 mb-2">
+        What is the primary concern?
+      </label>
+      <select 
+        id="ailment" 
+        value={value} 
+        onChange={(e) => onChange(e.target.value)}
+        className="block w-full rounded-lg border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 text-lg p-3"
+      >
+        {sortedAilments.map(([k, v]) => (
+          <option key={k} value={k}>{v.name || k}</option>
+        ))}
+      </select>
     </div>
   );
 }
 
-function ChipGroup({groups, value, onChange}) {
+function ChipGroup({ groups, value, onChange }) {
   return (
-    <div className="chip-group" data-selected={value || ''}>
+    <div className="flex flex-wrap gap-2">
       {groups.map(g => (
-        <div key={g.value}
-             className={"chip" + (value===g.value ? " active" : "")}
-             onClick={()=>onChange(g.value)}
-             data-value={g.value}>
+        <button
+          key={g.value}
+          type="button"
+          onClick={() => onChange(g.value)}
+          className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+            value === g.value 
+              ? 'bg-teal-600 text-white' 
+              : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+          }`}
+        >
           {g.label}
-        </div>
+        </button>
       ))}
     </div>
   );
 }
 
-function QuestionBlock({q, value, onChange}) {
+function QuestionBlock({ q, value, onChange }) {
+  const handleChange = (id, val) => onChange(id, val);
+
   return (
-    <div>
-      <label>{q.label}{q.required ? ' *' : ''}</label>
+    <div className="space-y-2">
+      <label className="block text-sm font-bold text-slate-700">
+        {q.label}{q.required && <span className="text-red-600 ml-1">*</span>}
+      </label>
+      
       {q.type === 'agegroup' && (
-        <ChipGroup groups={q.groups} value={value ?? null} onChange={(v)=>onChange(q.id, v)} />
+        <ChipGroup groups={q.groups} value={value ?? null} onChange={(v) => handleChange(q.id, v)} />
       )}
+
       {q.type === 'select' && (
-  <select value={value ?? ''} onChange={(e)=>onChange(q.id, e.target.value)}>
-    <option value="" disabled>Select an option…</option>
-    {q.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-  </select>
-)}
+        <select 
+          value={value ?? ''} 
+          onChange={(e) => handleChange(q.id, e.target.value)}
+          className="block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm p-2"
+        >
+          <option value="" disabled>Select an option…</option>
+          {q.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+      )}
+
       {q.type === 'multiselect' && (
-        <div className="multi">
-          {q.options.map((opt, i) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+          {q.options.map((opt) => {
             const checked = Array.isArray(value) && value.includes(opt);
             return (
-              <label key={i}>
+              <label key={opt} className="flex items-center space-x-3 p-2 rounded-md hover:bg-slate-50">
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={(e)=>{
+                  onChange={(e) => {
                     const prev = Array.isArray(value) ? value : [];
-                    const next = e.target.checked ? [...new Set([...prev, opt])] : prev.filter(x=>x!==opt);
-                    onChange(q.id, next);
-                  }} />
-                {opt}
+                    const next = e.target.checked ? [...prev, opt] : prev.filter(x => x !== opt);
+                    handleChange(q.id, next);
+                  }}
+                  className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="text-sm text-slate-700">{opt}</span>
               </label>
             );
           })}
         </div>
       )}
-      {(!['agegroup','select','multiselect'].includes(q.type)) && (
-        <input type="text" value={value ?? ''} onChange={(e)=>onChange(q.id, e.target.value)} />
-      )}
     </div>
   );
 }
-function isAnswered(q, answers){
-  const v = answers[q.id];
-  if (q.type === 'multiselect') return Array.isArray(v) && v.length > 0;
-  return v != null && String(v).trim() !== "";
-}
 
-function QuestionsForm({aName, questions, answers, onChange, onSubmit, showDosing, onOpenDosing}) {
-  const list = Array.isArray(questions) ? questions : [];
-  const required = list.filter(q => q.required);
-  const allGood = required.every(q => isAnswered(q, answers));
+function QuestionsForm({ ailment, answers, onChange, onSubmit, onOpenDosing }) {
+  const { name, questions = [] } = ailment;
+  const allRequiredAnswered = questions.filter(q => q.required).every(q => isAnswered(q, answers));
+  const showDosingButton = React.useMemo(() => {
+    try { return !!ailment.recommend({}).showDosing; } catch { return false; }
+  }, [ailment]);
 
   return (
-    <div className="card">
-      <div className="title">{aName} — Intake</div>
-      <hr />
-      {list.length === 0 ? (
-        <div className="muted">No questions configured yet for this ailment.</div>
-      ) : (
-        list.map(q => (
-          <QuestionBlock key={q.id} q={q} value={answers[q.id]} onChange={onChange} />
-        ))
-      )}
-
-      {!allGood && required.length > 0 && (
-        <div className="muted" style={{marginTop:8}}>
-          Please answer all required questions (marked with * ) to continue.
-        </div>
-      )}
-
-      <div className="row no-print" style={{marginTop:12}}>
-        <button className="btn btn-primary" onClick={onSubmit} disabled={!allGood}>
-          Get Recommendations
-        </button>
-        {showDosing && (
-          <button className="btn btn-ghost" type="button" onClick={onOpenDosing}>Open Dosing Calculator</button>
+    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200 space-y-6">
+      <div className="space-y-4">
+        {questions.length === 0 ? (
+          <p className="text-slate-500">No questions for this ailment.</p>
+        ) : (
+          questions.map(q => (
+            <QuestionBlock key={q.id} q={q} value={answers[q.id]} onChange={onChange} />
+          ))
         )}
       </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-200">
+        <button 
+          type="button"
+          onClick={onSubmit} 
+          disabled={!allRequiredAnswered}
+          className="w-full sm:w-auto px-6 py-3 text-base font-semibold text-white bg-teal-600 rounded-lg shadow-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+        >
+          Generate Plan
+        </button>
+        {showDosingButton && (
+          <button 
+            type="button" 
+            onClick={onOpenDosing}
+            className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors"
+          >
+            Dosing Calculator
+          </button>
+        )}
+      </div>
+      {!allRequiredAnswered && (
+        <p className="text-xs text-slate-500 text-center sm:text-left pt-2">
+          Please answer all required questions (<span className="text-red-600">*</span>) to generate a plan.
+        </p>
+      )}
     </div>
   );
 }
 
-
-function DoseCard({title, dose, per5}) {
-  const low = dose ? dose.mgPerDoseLow : null;
-  const high = dose ? dose.mgPerDoseHigh : null;
-  const vl = dose ? Dosing.volFor(low, per5) : null;
-  const vh = dose ? Dosing.volFor(high, per5) : null;
+function RecommendationCard({ r }) {
   return (
-    <div className="card" style={{flex:'1 1 360px'}}>
-      <div className="title">{title}</div>
-      <div className="dose-grid">
-        <div className="dose-card">
-          {dose ? (
-            <>
-              <div><strong>{low}–{high} mg per dose</strong> {title === 'Acetaminophen' ? 'every 4–6 hours' : 'every 6–8 hours'}</div>
-              <div className="muted">At {per5} mg/5 mL: ~{vl ?? "—"}–{vh ?? "—"} mL per dose</div>
-            </>
-          ) : "Enter weight to calculate dose."}
-        </div>
-      </div>
-      <div className="muted">
-        {title === 'Acetaminophen'
-          ? "Common liquids: 160 mg/5 mL. Tablets: 325 mg, 500 mg."
-          : "Common liquids: 100 mg/5 mL. Tablets: 200 mg."}
-      </div>
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+      <p className="font-semibold text-slate-800">{r.title}</p>
+      <p className="text-teal-700 font-bold text-lg">{brandText(r.brandKey)}</p>
     </div>
   );
 }
 
-function DosingModal({open, onClose}) {
+function Results({ payload }) {
+  const { refer = [], notes = [], recs = [], nonDrug = [] } = payload;
+  const primaryRec = recs.length > 0 ? recs[0] : null;
+  const secondaryRecs = recs.length > 1 ? recs.slice(1) : [];
+
+  return (
+    <div className="space-y-8">
+      {refer.length > 0 && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+          <h3 className="font-bold text-red-800">Seek Medical Attention</h3>
+          <ul className="list-disc list-inside mt-2 text-sm text-red-700 space-y-1">
+            {refer.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {primaryRec && (
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 mb-3">PharmRex Recommends:</h2>
+          <RecommendationCard r={primaryRec} />
+        </div>
+      )}
+      
+      {secondaryRecs.length > 0 && (
+        <div>
+           <h3 className="text-lg font-semibold text-slate-700 mb-3">Other things you can do:</h3>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {secondaryRecs.map((r, i) => <RecommendationCard key={i} r={r} />)}
+           </div>
+        </div>
+      )}
+
+      {nonDrug.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">Non-Drug Measures</h3>
+          <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
+            {nonDrug.map((n, i) => <li key={i}>{n}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {notes.length > 0 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg text-sm text-yellow-800">
+          <strong className="font-bold">Important Notes:</strong> {notes.join(' ')}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DosingModal({ open, onClose }) {
   const [unit, setUnit] = React.useState("kg");
   const [weight, setWeight] = React.useState("");
 
-  React.useEffect(()=>{
+  React.useEffect(() => {
     Dosing.setUnit(unit);
     Dosing.setWeight(weight === "" ? null : Number(weight));
   }, [unit, weight]);
 
   if (!open) return null;
-  return (
-    <div id="dosingModal" className="modal no-print" onClick={(e)=>{ if (e.target.id==='dosingModal') onClose(); }}>
-      <div className="modal-content">
-        <div className="modal-header">
-          <div className="title">Pediatric/Adult Dosing Calculator</div>
-          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+
+  const DoseDisplay = ({ title, dose, per5, details }) => {
+    const low = dose?.mgPerDoseLow;
+    const high = dose?.mgPerDoseHigh;
+    const volLow = Dosing.volFor(low, per5);
+    const volHigh = Dosing.volFor(high, per5);
+    return (
+      <div className="bg-slate-50 p-4 rounded-lg flex-1 min-w-[240px]">
+        <h3 className="font-bold text-lg text-slate-800">{title}</h3>
+        <div className="mt-2">
+          {dose ? (
+            <>
+              <p className="text-2xl font-bold text-teal-600">{low}–{high} mg</p>
+              <p className="text-sm text-slate-600">per dose</p>
+              <p className="mt-2 text-sm text-slate-500">For {per5}mg/5mL liquid: <strong className="text-slate-700">{volLow}–{volHigh} mL</strong></p>
+            </>
+          ) : (
+            <p className="text-slate-500">Enter weight to calculate.</p>
+          )}
         </div>
-        <hr />
-        <div className="row">
-          <div className="card" style={{flex:'1 1 300px'}}>
-            <label>Units</label>
-            <div className="chip-group" id="unitChips">
-              <div className={"chip" + (unit==='kg' ? ' active' : '')} data-value="kg" onClick={()=>setUnit('kg')}>kg</div>
-              <div className={"chip" + (unit==='lb' ? ' active' : '')} data-value="lb" onClick={()=>setUnit('lb')}>lb</div>
+        <p className="text-xs text-slate-400 mt-4">{details}</p>
+      </div>
+    );
+  };
+  
+  return (
+    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-4 sm:p-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-slate-800">Dosing Calculator</h2>
+            <button onClick={onClose} className="text-slate-500 hover:text-slate-800">&times;</button>
+          </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-4 p-4 bg-slate-100 rounded-lg">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Weight Unit</label>
+                <ChipGroup groups={[{value: 'kg', label: 'kg'}, {value: 'lb', label: 'lb'}]} value={unit} onChange={setUnit} />
+              </div>
+              <div>
+                <label htmlFor="weightInput" className="block text-sm font-medium text-slate-700 mb-1">Patient Weight</label>
+                <input
+                  id="weightInput"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder={`Enter weight in ${unit}`}
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className="block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm p-2"
+                />
+              </div>
             </div>
-            <label htmlFor="weightInput">Weight</label>
-            <input id="weightInput" type="number" min="0" step="0.1" placeholder="Enter weight" value={weight}
-                   onChange={(e)=>setWeight(e.target.value)} />
-            <div className="muted" id="unitHint">Using {unit === 'kg' ? 'kilograms (kg)' : 'pounds (lb)'}</div>
-            <hr />
-            <div className="muted">Label-standard ranges:</div>
-            <ul className="muted">
-              <li>Acetaminophen: 10–15 mg/kg q4–6h (max 75 mg/kg/day; adult OTC max 3,000–4,000 mg/day per label/health status).</li>
-              <li>Ibuprofen (≥6 months): 5–10 mg/kg q6–8h (max 40 mg/kg/day; adult OTC max 1,200 mg/day).</li>
-            </ul>
+            <div className="md:col-span-2 flex flex-wrap gap-4">
+              <DoseDisplay title="Acetaminophen" dose={Dosing.apapDose()} per5={160} details="e.g., Tylenol. Common liquid: 160mg/5mL."/>
+              <DoseDisplay title="Ibuprofen" dose={Dosing.ibuDose()} per5={100} details="e.g., Advil/Motrin. Common liquid: 100mg/5mL."/>
+            </div>
           </div>
-
-          <DoseCard title="Acetaminophen" dose={Dosing.apapDose()} per5={160} />
-          <DoseCard title="Ibuprofen" dose={Dosing.ibuDose()} per5={100} />
-        </div>
-
-        <div className="note" style={{marginTop:12}}>
-          <strong>Safety notes:</strong> Avoid duplicate acetaminophen; avoid ibuprofen in infants &lt;6 months, late pregnancy, dehydration, ulcer/renal risk. Reference product labels.
+          <div className="mt-6 p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg">
+            <strong>Disclaimer:</strong> This is a tool for estimation. Always verify dosing with official product labeling or a healthcare professional. Avoid ibuprofen in infants <6 months.
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function RecommendationCard({r, showBrands}) {
-  // Defensive rendering prevents "undefined name" errors:
-  const title = r?.title ?? 'Untitled';
-  const examples = (r?.examples && r.examples.length) ? r.examples.join(", ") : "—";
-  const brandLine = showBrands ? brandText(r?.brandKey, r?.examples) : null;
-
-  return (
-    <div className="dose-card">
-      <div><span className="pill">{title}</span></div>
-      <div className="muted">Examples: {examples}</div>
-      {showBrands && brandLine
-        ? <div className="muted"><em>Brands: {brandLine}</em></div>
-        : null}
-      <div>How: {r?.how || "—"}</div>
-      <div className="muted">Notes: {r?.warn || "—"}</div>
-    </div>
-  );
-}
-
-function planToText(aName, payload){
-  const { refer=[], notes=[], recs=[], nonDrug=[] } = payload || {};
-  const lines = [];
-  lines.push(`Tobi the Pharmacists recommends:`);
-  if (refer.length){ lines.push("", "Refer:", ...refer.map(x=>`• ${x}`)); }
-  if (recs.length){
-    lines.push("", "OTC options:");
-    recs.forEach(r=>{
-      const title = r?.title || "Option";
-      const examples = (r?.examples && r.examples.length) ? `Examples: ${r.examples.join(", ")}` : "";
-      const how = r?.how ? `How: ${r.how}` : "";
-      const warn = r?.warn ? `Notes: ${r.warn}` : "";
-      lines.push(`• ${title}${examples?` — ${examples}`:""}`);
-      if (how) lines.push(`   ${how}`);
-      if (warn) lines.push(`   ${warn}`);
-    });
-  }
-  if (nonDrug.length){ lines.push("", "Non-drug measures:", ...nonDrug.map(x=>`• ${x}`)); }
-  if (notes.length){ lines.push("", "Important:", notes.join(" ")); }
-  return lines.join("\n");
-}
-
-function Results({aName, payload, showBrands}) {
-  const [query, setQuery] = React.useState("");
-  const { refer=[], notes=[], recs=[], nonDrug=[] } = payload || {};
-
-  const filtered = React.useMemo(()=>{
-    if (!query) return recs;
-    const q = query.toLowerCase();
-    return recs.filter(r => (JSON.stringify(r) || "").toLowerCase().includes(q));
-  }, [recs, query]);
-
-  function copyPlan(){
-    const txt = planToText(aName, payload);
-    const textArea = document.createElement("textarea");
-    textArea.value = txt;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        // In a real app, you'd use a more robust notification system
-        // alert("Plan copied to clipboard ✅");
-    } catch (err) {
-        // alert("Could not copy. (Your browser may block clipboard access.)");
-    }
-    document.body.removeChild(textArea);
-  }
-
-  return (
-    <div className="card">
-      <div className="title">Tobi the Pharmacists recommends:</div>
-      <hr />
-      <div className="row no-print">
-        <input
-          placeholder="Search brands (e.g., Tylenol, Sudafed, Zyrtec)"
-          style={{flex:"2 1 300px"}}
-          value={query}
-          onChange={(e)=>setQuery(e.target.value)}
-        />
-        <button className="btn btn-ghost" type="button" onClick={copyPlan}>Copy plan</button>
-      </div>
-
-      {refer.length > 0 && (
-        <>
-          <p><span className="danger">Refer to clinician/urgent care:</span></p>
-          <ul>{refer.map((r,i)=><li key={i}>{r}</li>)}</ul>
-        </>
-      )}
-
-      {filtered.length > 0 && (
-        <>
-          <p><span className="ok">OTC options:</span></p>
-          <div>
-            {filtered.map((r,i)=><RecommendationCard key={i} r={r} showBrands={showBrands} />)}
-          </div>
-        </>
-      )}
-
-      {nonDrug.length > 0 && (
-        <>
-          <p><strong>Non-drug measures:</strong></p>
-          <ul>{nonDrug.map((n,i)=><li key={i}>{n}</li>)}</ul>
-        </>
-      )}
-
-      {notes.length > 0 && (
-        <div className="note"><strong>Important:</strong> {notes.join(' ')}</div>
-      )}
     </div>
   );
 }
 
 
 /* ----------------------- Root App ----------------------- */
-
-function App() {
+function PharmRexApp() {
   const ailments = CORE;
-
-  // pick the first ailment that actually has questions
-  const validKeys = Object.keys(ailments).filter(k => Array.isArray(ailments[k]?.questions));
-
-  // (new) respect URL hash if present, else first valid key
-  const initialFromHash = (location.hash || "").replace(/^#/, "");
-  const initialKey = validKeys.includes(initialFromHash) ? initialFromHash : (validKeys[0] ?? Object.keys(ailments)[0]);
+  const initialKey = Object.keys(ailments)[0];
 
   const [ailmentKey, setAilmentKey] = React.useState(initialKey);
-  const [answers, setAnswers] = React.useState(() => AnswerStore.get(initialKey)); // load saved
+  const [answers, setAnswers] = React.useState(() => AnswerStore.get(initialKey));
   const [result, setResult] = React.useState(null);
-  const [showBrands, setShowBrands] = React.useState(BrandPref.get());
   const [dosingOpen, setDosingOpen] = React.useState(false);
-  const a = ailments[ailmentKey];
+  
+  const activeAilment = ailments[ailmentKey];
 
-  // keep URL hash in sync (nice little deep-link)
-  React.useEffect(()=>{ if (ailmentKey) location.hash = ailmentKey; }, [ailmentKey]);
-
-  const showDosing = React.useMemo(()=>{
-    try { return !!a.recommend({}).showDosing; } catch { return false; }
-  }, [a]);
-
-  // (updated) when answers change, save them
-  function onChangeAnswer(id, value){
+  const handleAilmentChange = (key) => {
+    setAilmentKey(key);
+    setAnswers(AnswerStore.get(key));
+    setResult(null);
+  };
+  
+  const handleAnswerChange = React.useCallback((id, value) => {
     setAnswers(prev => {
       const next = { ...prev, [id]: value };
       AnswerStore.set(ailmentKey, next);
       return next;
     });
-  }
+  }, [ailmentKey]);
 
-  function onSubmit(){
-  try {
-    const normalized = normalizeAnswers(answers);
-    const payload = a && typeof a.recommend === "function"
-      ? a.recommend(normalized) || {}
-      : {};
+  const handleSubmit = () => {
+    try {
+      const normalized = normalizeAnswers(answers);
+      const payload = activeAilment?.recommend?.(normalized) || {};
+      setResult(payload);
+      setTimeout(() => {
+        document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (err) {
+      console.error("Recommendation generation failed:", err);
+      // You could set an error state here to show a message to the user
+    }
+  };
 
-    // minimal fallback so Results always renders something
-    const safePayload = {
-      refer: Array.isArray(payload.refer) ? payload.refer : [],
-      notes: Array.isArray(payload.notes) ? payload.notes : [],
-      recs:  Array.isArray(payload.recs)  ? payload.recs  : [],
-      nonDrug: Array.isArray(payload.nonDrug) ? payload.nonDrug : [],
-      showDosing: !!payload.showDosing
-    };
-
-    setResult(safePayload);
-
-    // Scroll to results (defer so React can render first)
-    setTimeout(()=>{
-      const resultsElement = document.querySelector('.card:has(.title:contains("Tobi the Pharmacists recommends:"))');
-        if (resultsElement) {
-            resultsElement.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, 100);
-  } catch (err) {
-    console.error("Recommend error:", err);
-    // In a real app, you'd use a more user-friendly error display
-    // alert("Sorry—something went wrong creating the plan. Check the console for details.");
-  }
-}
-
-
-  // (updated) on ailment change: swap answers to those saved for that ailment
-  function changeAilment(k){
-    setAilmentKey(k);
-    setAnswers(AnswerStore.get(k));
-    setResult(null);
-  }
-
-  function onReset(){
+  const handleReset = () => {
     AnswerStore.clear(ailmentKey);
     setAnswers({});
     setResult(null);
-    window.scrollTo({ top: 0, behavior:'smooth' });
-  }
-
-  function toggleBrands(v){
-    setShowBrands(v);
-    BrandPref.set(v);
-  }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <React.Fragment>
-      <SiteHeader showBrands={showBrands} onToggleBrands={toggleBrands} onPrint={()=>window.print()} onSubmit={onSubmit} />
-      <main>
-        <AilmentPicker
-          ailments={ailments}
-          value={ailmentKey}
-          onChange={changeAilment}   // <-- uses the new function
-          onReset={onReset}
-        />
+    <div className="bg-slate-50 min-h-screen font-sans">
+      <SiteHeader onReset={handleReset} />
+      <main className="max-w-3xl mx-auto py-6 sm:py-8 px-4 space-y-8">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200">
+           <AilmentPicker ailments={ailments} value={ailmentKey} onChange={handleAilmentChange} />
+        </div>
+        
         <QuestionsForm
-          aName={a.name || ailmentKey}
-          questions={a.questions}
+          ailment={activeAilment}
           answers={answers}
-          onChange={onChangeAnswer}
-          onSubmit={onSubmit}
-          showDosing={showDosing}
-          onOpenDosing={()=>setDosingOpen(true)}
+          onChange={handleAnswerChange}
+          onSubmit={handleSubmit}
+          onOpenDosing={() => setDosingOpen(true)}
         />
+        
         {result && (
-          <Results
-            aName={a.name || ailmentKey}
-            payload={result}
-            showBrands={showBrands}
-          />
+          <div id="results-section" className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-slate-200">
+            <Results payload={result} />
+          </div>
         )}
       </main>
-      <footer className="footer no-print">
-        pharmacists recommends <strong>React</strong> — <span id="buildDate">{new Date().toISOString().slice(0,16).replace('T',' ')}</span>
+      <footer className="text-center py-4 text-xs text-slate-400">
+        PharmRex &copy; {new Date().getFullYear()} | This tool is for informational purposes and is not a substitute for professional medical advice.
       </footer>
-
-      <DosingModal open={dosingOpen} onClose={()=>setDosingOpen(false)} />
-    </React.Fragment>
+      <DosingModal open={dosingOpen} onClose={() => setDosingOpen(false)} />
+    </div>
   );
 }
 
-/* ----------------------- Mount ----------------------- */
-// This logic ensures that the React app is only mounted once,
-// and that it waits for the whole page to be ready.
-window.onload = () => {
-    const rootElement = document.getElementById('root');
-    if (rootElement && !rootElement._reactRootContainer) {
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(<App />);
-    }
-};
+// Mount the app to the root element in index.html
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PharmRexApp />);
